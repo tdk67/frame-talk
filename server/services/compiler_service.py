@@ -25,7 +25,17 @@ class CompilerService:
             chronos_schedule=chronos_schedule,
             output_filename=out_name
         )
-        res["video_url"] = f"/output/{out_name}"
-        return res
+        
+        # Determine total duration (if available from FFmpeg or approximate)
+        # We can try to extract duration or just set it to 0 for now.
+        video_url = f"/output/{out_name}"
+        
+        return {
+            "status": "success" if res.get("success") else "failed",
+            "video_url": video_url,
+            "video_path": res.get("output_path", ""),
+            "total_duration_sec": 0.0, # Will need FFprobe to get exact, placeholder for now
+            "message": "Compilation completed successfully." if res.get("success") else "Compilation failed."
+        }
 
 compiler_service = CompilerService()

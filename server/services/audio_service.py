@@ -48,15 +48,52 @@ class AudioService:
             updated_turns.append({
                 **turn,
                 "turn_index": idx,
-                "audio_duration_ms": dur_ms
+                "audio_duration_ms": dur_ms,
+                "pcm_bytes": pcm_bytes
             })
 
         # Calculate Chronos Dynamic Video Stretch
         chronos_result = chronos_engine.align_scenes_and_dialogue(scenes, updated_turns)
 
-        # Concatenate Master Audio
-        master_pcm = audio_synth.concatenate_dialogue_audio(audio_chunks)
-        master_wav = audio_synth.pcm_to_wav(master_pcm)
+        # Concatenate Master Audio Perfectly Padded to Video Timeline
+        master_pcm = bytearray()
+        conversational_pause_ms = chronos_engine.conversational_pause_ms
+
+        for segment in chronos_result.get("aligned_timeline", []):
+            segment_duration_ms = segment.get("playhead_end_ms", 0) - segment.get("playhead_start_ms", 0)
+            
+            if segment.get("segment_type") == "video_passthrough":
+                # No dialogue in this scene, just pad silence for the full video duration
+                master_pcm.extend(audio_synth.generate_silence(segment_duration_ms))
+            else:
+                # Scene with dialogue
+                scene_turns = segment.get("turns", [])
+                audio_consumed_ms = 0
+                
+                for t_idx, turn in enumerate(scene_turns):
+                    pcm_bytes = turn.get("pcm_bytes", b'')
+                    dur_ms = turn.get("audio_duration_ms", 0)
+                    
+                    master_pcm.extend(pcm_bytes)
+                    audio_consumed_ms += dur_ms
+                    
+                    if t_idx < len(scene_turns) - 1:
+                        master_pcm.extend(audio_synth.generate_silence(conversational_pause_ms))
+                        audio_consumed_ms += conversational_pause_ms
+                
+                # Pad the remaining time in this scene with silence so it aligns perfectly with the video
+                remaining_silence_ms = segment_duration_ms - audio_consumed_ms
+                if remaining_silence_ms > 0:
+                    master_pcm.extend(audio_synth.generate_silence(remaining_silence_ms))
+
+        # Remove the temporary pcm_bytes to avoid polluting the JSON response
+        for turn in updated_turns:
+            turn.pop("pcm_bytes", None)
+        for segment in chronos_result.get("aligned_timeline", []):
+            for turn in segment.get("turns", []):
+                turn.pop("pcm_bytes", None)
+
+        master_wav = audio_synth.pcm_to_wav(bytes(master_pcm))
 
         audio_filename = f"podcast_{sid[:8]}.wav"
         file_repository.save_output_file(audio_filename, master_wav)
@@ -94,5 +131,21 @@ class AudioService:
             "total_audio_ms": len(master_pcm) // 48,
             "updated_turns": updated_turns
         }
+
+    def test_voice(self, voice_name: str, text: str, api_key: Optional[str] = None) -> Dict[str, Any]:
+        """Synthesizes a short test clip for a specific voice."""
+        pcm_bytes, dur_ms = execute_with_retry(
+            action_name=f"Test Voice Synthesis",
+            fn=audio_synth.synthesize_line,
+            text=text,
+            speaker="Test",
+            voice_alex=voice_name,
+            voice_sam=voice_name,
+            api_key=api_key
+        )
+        wav_bytes = audio_synth.pcm_to_wav(pcm_bytes)
+        filename = f"test_voice_{uuid.uuid4().hex[:8]}.wav"
+        file_repository.save_output_file(filename, wav_bytes)
+        return {"audio_url": f"/output/{filename}"}
 
 audio_service = AudioService()

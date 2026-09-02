@@ -4,12 +4,18 @@ Audio & Compilation API Router
 
 from fastapi import APIRouter, Depends
 from typing import Optional
-from server.models.schemas import SynthesizeRequest, SynthesizeResponse, CompileRequest, CompileResponse
+from server.models.schemas import SynthesizeRequest, SynthesizeResponse, CompileRequest, CompileResponse, TestVoiceRequest, TestVoiceResponse
 from server.services.audio_service import audio_service
 from server.services.compiler_service import compiler_service
 from server.api.dependencies import get_api_key
 
 router = APIRouter(prefix="/api", tags=["3. Audio & Compilation"])
+
+@router.post("/test-voice", response_model=TestVoiceResponse)
+async def test_voice(req: TestVoiceRequest, api_key: Optional[str] = Depends(get_api_key)):
+    """Generates a short test clip of the selected voice."""
+    result = audio_service.test_voice(req.voice_name, req.text, api_key=api_key)
+    return TestVoiceResponse(**result)
 
 @router.post("/synthesize-audio", response_model=SynthesizeResponse)
 async def synthesize_audio(req: SynthesizeRequest, api_key: Optional[str] = Depends(get_api_key)):

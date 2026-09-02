@@ -128,6 +128,13 @@ class AudioSynthEngine:
         dur_ms = int(duration_sec * 1000)
         return bytes(pcm_chunks), dur_ms
 
+    def generate_silence(self, duration_ms: int) -> bytes:
+        """Generates exact millisecond silence."""
+        if duration_ms <= 0:
+            return b''
+        pause_samples = int((duration_ms / 1000.0) * PCM_SAMPLE_RATE)
+        return b'\x00' * (pause_samples * PCM_SAMPLE_WIDTH)
+
     def concatenate_dialogue_audio(
         self,
         audio_chunks: List[Tuple[bytes, int]],
@@ -136,8 +143,7 @@ class AudioSynthEngine:
         """
         Concatenates dialogue audio chunks with natural conversational pauses (180-260ms).
         """
-        pause_samples = int((conversational_pause_ms / 1000.0) * PCM_SAMPLE_RATE)
-        pause_bytes = b'\x00' * (pause_samples * PCM_SAMPLE_WIDTH)
+        pause_bytes = self.generate_silence(conversational_pause_ms)
 
         master_pcm = bytearray()
         for idx, (chunk, _) in enumerate(audio_chunks):

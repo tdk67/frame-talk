@@ -54,7 +54,6 @@ class VideoCompiler:
             "-i", audio_path,
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "fast",
             "-c:a", "aac", "-b:a", "192k",
-            "-shortest",
             output_path
         ]
         logger.info(f"Running simple remux: {' '.join(cmd)}")
@@ -149,7 +148,6 @@ class VideoCompiler:
                 "-i", audio_path,
                 "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "fast",
                 "-c:a", "aac", "-b:a", "192k",
-                "-shortest",
                 output_path
             ]
             logger.info(f"Stitching {len(segment_files)} segments with master audio...")

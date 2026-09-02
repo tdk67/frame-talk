@@ -94,6 +94,19 @@ export const api = {
         return await res.json();
     },
 
+    async testVoice(voiceName, apiKey) {
+        const res = await fetch(`${API_BASE}/api/test-voice`, {
+            method: 'POST',
+            headers: getHeaders(apiKey),
+            body: JSON.stringify({
+                voice_name: voiceName,
+                text: "Hi, I'm your selected voice. How do I sound?"
+            })
+        });
+        if (!res.ok) throw new Error(`Voice test failed: ${await res.text()}`);
+        return await res.json();
+    },
+
     async compileVideo(sessionId, videoFilename, audioFilename, chronosSchedule) {
         const res = await fetch(`${API_BASE}/api/compile-video`, {
             method: 'POST',

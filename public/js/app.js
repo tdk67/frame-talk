@@ -581,19 +581,62 @@ function initKeyModal() {
         if (modal) modal.classList.remove('active');
     };
 
-    window.saveAndVerifyKey = () => {
+    window.toggleKeyVisibility = () => {
         const input = document.getElementById('api-key-input');
+        if (input) {
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+    };
+
+    window.saveAndVerifyKey = async () => {
+        const input = document.getElementById('api-key-input');
+        const err = document.getElementById('key-error-msg');
+        const btnSave = document.getElementById('btn-save-key');
+        const btnCancel = document.getElementById('btn-cancel-key');
+        
         const val = input ? input.value.trim() : '';
-        if (val) {
-            store.setState({ apiKey: val });
-            checkBackendHealth();
-            window.closeKeyModal();
-        } else {
-            const err = document.getElementById('key-error-msg');
+        if (!val) {
             if (err) {
-                err.textContent = 'Please enter a valid API key.';
+                err.textContent = 'Please enter an API key.';
                 err.style.display = 'block';
             }
+            return;
+        }
+
+        if (err) err.style.display = 'none';
+        if (btnSave) btnSave.disabled = true;
+        if (btnSave) btnSave.textContent = 'Validating...';
+        if (btnCancel) btnCancel.disabled = true;
+
+        try {
+            const res = await fetch('/api/byok/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: val })
+            });
+            const data = await res.json();
+            
+            if (data.valid) {
+                store.setState({ apiKey: val });
+                checkBackendHealth();
+                window.closeKeyModal();
+            } else {
+                if (err) {
+                    err.textContent = data.error || 'Invalid API key.';
+                    err.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            if (err) {
+                err.textContent = 'Could not reach validation server.';
+                err.style.display = 'block';
+            }
+        } finally {
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Validate & Save';
+            }
+            if (btnCancel) btnCancel.disabled = false;
         }
     };
 }
@@ -606,3 +649,22 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+window.testVoice = async (selectId) => {
+    const btn = document.querySelector(`button[onclick="window.testVoice('${selectId}')"]`);
+    if (btn) btn.disabled = true;
+    try {
+        const voiceName = document.getElementById(selectId).value;
+        const apiKey = store.getState().apiKey;
+        const data = await api.testVoice(voiceName, apiKey);
+        if (data && data.audio_url) {
+            const audio = new Audio(data.audio_url);
+            audio.play();
+        }
+    } catch (err) {
+        console.error("Test Voice Error:", err);
+        alert("Failed to test voice: " + err.message);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+};

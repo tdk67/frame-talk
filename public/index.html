@@ -367,11 +367,14 @@
                         </div>
                         <div class="form-group">
                             <label for="host-a-voice-select">Choose Voice (gemini-3.1-flash-tts-preview)</label>
-                            <select id="host-a-voice-select">
-                                <option value="Puck" selected>Puck (Gemini Default Male - Natural)</option>
-                                <option value="Charon">Charon (Deep Male)</option>
-                                <option value="Fenrir">Fenrir (Alternative Male)</option>
-                            </select>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="host-a-voice-select" style="flex: 1;">
+                                    <option value="Puck" selected>Puck (Gemini Default Male - Natural)</option>
+                                    <option value="Charon">Charon (Deep Male)</option>
+                                    <option value="Fenrir">Fenrir (Alternative Male)</option>
+                                </select>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="window.testVoice('host-a-voice-select')">Test 🔊</button>
+                            </div>
                         </div>
                     </div>
 
@@ -386,11 +389,14 @@
                         </div>
                         <div class="form-group">
                             <label for="host-b-voice-select">Choose Voice (gemini-3.1-flash-tts-preview)</label>
-                            <select id="host-b-voice-select">
-                                <option value="Kore" selected>Kore (Gemini Default Female - Crisp)</option>
-                                <option value="Aoede">Aoede (Clear Female)</option>
-                                <option value="Leda">Leda (Youthful Female)</option>
-                            </select>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="host-b-voice-select" style="flex: 1;">
+                                    <option value="Kore" selected>Kore (Gemini Default Female - Crisp)</option>
+                                    <option value="Aoede">Aoede (Clear Female)</option>
+                                    <option value="Leda">Leda (Youthful Female)</option>
+                                </select>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="window.testVoice('host-b-voice-select')">Test 🔊</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -556,16 +562,24 @@
     <div id="key-modal" class="modal-overlay">
         <div class="modal-card">
             <h2 style="margin-bottom: 1rem;">Configure API Key</h2>
-            <p style="color: var(--color-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-                Enter your Gemini API key (starts with AIzaSy) or OpenRouter API key. It is stored securely in your browser's localStorage.
+            <p style="color: var(--color-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                Enter your Google Gemini API key (starts with AIzaSy). It is stored securely in your browser's localStorage.
+            </p>
+            <p style="color: var(--color-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+                Need a key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--color-blue); text-decoration: none;">Google AI Studio</a>.
             </p>
             <div class="form-group">
                 <label for="api-key-input">API Key</label>
-                <input type="password" id="api-key-input" placeholder="AIzaSy... or sk-or-...">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="api-key-input" placeholder="AIzaSy..." style="flex: 1; padding-right: 2.5rem;">
+                    <button id="toggle-key-visibility" type="button" onclick="toggleKeyVisibility()" style="position: absolute; right: 0.5rem; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--color-muted);">
+                        👁️
+                    </button>
+                </div>
                 <p id="key-error-msg" style="color: #D32F2F; font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
-                <button class="btn btn-ghost" onclick="closeKeyModal()">Cancel</button>
+                <button class="btn btn-ghost" onclick="closeKeyModal()" id="btn-cancel-key">Cancel</button>
                 <button class="btn btn-primary" id="btn-save-key" onclick="saveAndVerifyKey()">Validate & Save</button>
             </div>
         </div>
@@ -573,7 +587,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 Frame Talk. Built with ☕ and Bricolage Grotesque for the Agentic Cinema Hackathon.</p>
+        <p>&copy; 2026 Frame Talk. Built with ☕ and Bricolage Grotesque for the Agentic Cinema Hackathon. | <a href="/impressum.html" style="color: inherit; text-decoration: underline;">Legal Notice</a> | <a href="/datenschutz.html" style="color: inherit; text-decoration: underline;">Privacy Policy</a></p>
     </footer>
 
     <!-- App Scripts -->

@@ -64,6 +64,13 @@ class QaResponse(BaseModel):
 
 # ─── Audio Synthesis & Chronos Sync ──────────────────────────────────────────
 
+class TestVoiceRequest(BaseModel):
+    voice_name: str = "Puck"
+    text: str = "Hi, I'm your selected voice. How do I sound?"
+
+class TestVoiceResponse(BaseModel):
+    audio_url: str
+
 class SynthesizeRequest(BaseModel):
     session_id: Optional[str] = None
     scenes: List[Dict[str, Any]]

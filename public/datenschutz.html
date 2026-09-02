@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Frame Talk</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-container {
+            max-width: 800px;
+            margin: 3rem auto;
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 12px 48px -12px rgba(13, 27, 42, 0.08);
+            border: 1px solid var(--color-border);
+        }
+        h1 {
+            font-family: var(--font-display);
+            color: var(--color-navy);
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+        h2 {
+            color: var(--color-navy);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        p {
+            color: var(--color-muted);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+        }
+        ul {
+            color: var(--color-muted);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+            font-size: 1.05rem;
+        }
+    </style>
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-icon">F</span>
+                <span class="logo-text">Frame Talk</span>
+            </a>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <a href="/" class="btn btn-secondary" style="padding: 0.5rem 1rem; text-decoration: none;">← Back to App</a>
+            </div>
+        </div>
+    </header>
+
+    <main style="flex: 1;">
+        <div class="page-container">
+            <h1>Privacy Policy (Datenschutz)</h1>
+            
+            <h2>1. Data Protection at a Glance</h2>
+            <p>
+                We take the protection of your personal data very seriously. We treat your personal data confidentially and in accordance with the statutory data protection regulations as well as this privacy policy.
+            </p>
+            <p>
+                <strong>Bring Your Own Key (BYOK) Model</strong><br>
+                This application operates strictly on a "Bring Your Own Key" (BYOK) model. The API key you provide to access the Google Gemini API is stored <em>only locally</em> in your browser's <code>localStorage</code>. It is never transmitted to, stored on, or logged by our servers. All API requests using your key are made directly from your browser to Google, or securely proxied without storage.
+            </p>
+
+            <h2>2. General Information and Mandatory Information</h2>
+            <p>
+                <strong>Data Collection on our Website</strong><br>
+                When you use this website, certain technical data (such as your IP address, browser type, and access times) may be temporarily logged by the web server to ensure secure and stable operation.
+            </p>
+
+            <h2>3. Third-Party Services</h2>
+            <p>
+                <strong>Google Gemini API</strong><br>
+                Because this app relies on the Google Gemini API, your prompts, uploaded screencasts, and generated audio are transmitted to Google's servers for processing. Please review <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--color-blue);">Google's Privacy Policy</a> to understand how they process your data.
+            </p>
+
+            <h2>4. Your Rights</h2>
+            <p>
+                You have the right to request information about the origin, recipient, and purpose of your stored personal data at any time, free of charge. You also have the right to request that it be corrected or deleted. If you have given your consent to data processing, you can revoke this consent at any time for the future.
+            </p>
+            <p>
+                To delete your stored API key, you can simply clear your browser's local storage or use the "Disconnect" option in the app.
+            </p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Frame Talk. Built with ☕ and Bricolage Grotesque for the Agentic Cinema Hackathon. | <a href="/impressum.html" style="color: inherit; text-decoration: underline;">Legal Notice</a> | <a href="/datenschutz.html" style="color: inherit; text-decoration: underline;">Privacy Policy</a></p>
+    </footer>
+
+</body>
+</html>
