@@ -205,41 +205,71 @@ function initControls() {
         const { videoFile, readmeFile, readmeText, videoDurationSec, apiKey } = store.getState();
         if (!videoFile || !readmeText) return;
 
-        setStepLoading(2, true, 'Gemini 3.7 Flash analyzing video pixels & documentation...');
+        setStepLoading(2, true, 'Computing fast hash...');
         window.navigateToStep(2);
-        updateStepProgress(2, 20);
+        updateStepProgress(2, 5);
 
         try {
-            const uploadRes = await api.uploadAssets(videoFile, readmeFile);
-            updateStepProgress(2, 60);
-
-            let timerInterval;
-            let secondsElapsed = 0;
-
-            const analyzeRes = await api.analyzeVideo(
-                uploadRes.video_filename, 
-                readmeText, 
-                videoDurationSec, 
-                apiKey,
-                uploadRes.video_hash,
-                (jobId) => {
-                    timerInterval = setInterval(() => {
-                        secondsElapsed++;
-                        setStepLoading(2, true, `Running background video analysis... (${secondsElapsed}s)`);
-                    }, 1000);
-                    setStepLoading(2, true, `Running background video analysis... (0s)`);
-                    updateStepProgress(2, 75);
-                }
-            );
+            const fastHash = await api.computeFastHash(videoFile);
+            updateStepProgress(2, 10);
             
-            if (timerInterval) clearInterval(timerInterval);
-            updateStepProgress(2, 100);
+            const cachedJob = await api.getJob(fastHash);
+            
+            let analyzeRes;
+            let finalVideoFilename;
+
+            if (cachedJob && cachedJob.status === 'COMPLETED') {
+                // CACHE HIT
+                setStepLoading(2, true, 'Cache hit! Loading scenes and syncing video silently...');
+                updateStepProgress(2, 80);
+                
+                analyzeRes = cachedJob.result;
+                
+                // Silently upload video in the background for compiler stage later
+                api.uploadAssets(videoFile, readmeFile).then(uploadRes => {
+                    store.setState({ uploadedVideoFilename: uploadRes.video_filename });
+                }).catch(e => console.error("Silent upload failed", e));
+                
+                // Keep the state mostly empty for now since uploadedVideoFilename will populate asynchronously
+                finalVideoFilename = null;
+                updateStepProgress(2, 100);
+            } else {
+                // CACHE MISS
+                setStepLoading(2, true, 'Uploading video for analysis...');
+                const uploadRes = await api.uploadAssets(videoFile, readmeFile);
+                finalVideoFilename = uploadRes.video_filename;
+                updateStepProgress(2, 60);
+
+                let timerInterval;
+                let secondsElapsed = 0;
+
+                analyzeRes = await api.analyzeVideo(
+                    uploadRes.video_filename, 
+                    readmeText, 
+                    videoDurationSec, 
+                    apiKey,
+                    fastHash, // Use fast hash as the ID!
+                    (jobId) => {
+                        timerInterval = setInterval(() => {
+                            secondsElapsed++;
+                            setStepLoading(2, true, `Running background video analysis... (${secondsElapsed}s)`);
+                        }, 1000);
+                        setStepLoading(2, true, `Running background video analysis... (0s)`);
+                        updateStepProgress(2, 75);
+                    }
+                );
+                
+                if (timerInterval) clearInterval(timerInterval);
+                updateStepProgress(2, 100);
+            }
 
             store.setState({
                 scenes: analyzeRes.scenes,
-                uploadedVideoFilename: uploadRes.video_filename,
                 videoEvalScorecard: analyzeRes.eval_scorecard
             });
+            if (finalVideoFilename) {
+                store.setState({ uploadedVideoFilename: finalVideoFilename });
+            }
 
             renderTranscriptTable(analyzeRes.scenes);
             if (analyzeRes.eval_scorecard) {

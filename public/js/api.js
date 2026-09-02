@@ -15,7 +15,28 @@ function getHeaders(apiKey) {
     return headers;
 }
 
+async function computeFastHash(file) {
+    const CHUNK_SIZE = 1024 * 1024; // 1MB
+    const slice = file.slice(0, CHUNK_SIZE);
+    const buffer = await slice.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${hashHex}_${file.size}`;
+}
+
 export const api = {
+    computeFastHash,
+
+    async getJob(jobId) {
+        const res = await fetch(`${API_BASE}/api/jobs/${jobId}`);
+        if (!res.ok) {
+            if (res.status === 404) return null;
+            throw new Error(`Failed to fetch job: ${await res.text()}`);
+        }
+        return await res.json();
+    },
+
     async checkHealth() {
         try {
             const res = await fetch(`${API_BASE}/api/health`);
@@ -51,9 +72,18 @@ export const api = {
             })
         });
         if (!res.ok) throw new Error(`Analysis submission failed: ${await res.text()}`);
-        const { job_id } = await res.json();
+        const resData = await res.json();
+        const { job_id, status: initialStatus } = resData;
         
         if (onProgress) onProgress(job_id);
+
+        if (initialStatus === 'COMPLETED' || initialStatus === 'FAILED') {
+            const pollRes = await fetch(`${API_BASE}/api/jobs/${job_id}`);
+            if (!pollRes.ok) throw new Error(`Fetch failed: ${await pollRes.text()}`);
+            const job = await pollRes.json();
+            if (job.status === 'COMPLETED') return job.result;
+            if (job.status === 'FAILED') throw new Error(`Analysis job failed: ${job.error}`);
+        }
 
         // Step 2: Poll for completion
         while (true) {

@@ -4,9 +4,11 @@ File Repository: Persistence adapter for raw assets, markdown, and audio/video f
 
 import os
 import uuid
+import time
 import aiofiles
 from pathlib import Path
 from typing import Tuple, Optional
+from fastapi import UploadFile
 from server.core.config import config
 from server.core.exceptions import ResourceNotFoundException
 
@@ -15,11 +17,14 @@ class FileRepository:
         self.uploads_dir = config.uploads_dir
         self.output_dir = config.output_dir
 
-    async def save_uploaded_video(self, upload_file, original_filename: str) -> Tuple[str, str, str]:
-        """Saves an UploadFile to uploads/ in 1MB chunks and returns (filename, filepath, hash)."""
+    async def save_uploaded_video(self, upload_file: UploadFile, filename: str) -> Tuple[str, str, str]:
+        """Saves video, computes SHA-256, and returns (filename, path, hash)."""
+        import asyncio
         import hashlib
-        ext = os.path.splitext(original_filename)[1] or ".mp4"
-        filename = f"screencast_{uuid.uuid4().hex[:8]}{ext}"
+        asyncio.create_task(self._cleanup_old_files())
+        
+        ext = os.path.splitext(filename)[1]
+        unique_name = f"video_{uuid.uuid4().hex}{ext}"
         filepath = self.uploads_dir / filename
         
         hasher = hashlib.sha256()
@@ -59,5 +64,17 @@ class FileRepository:
         with open(path, "wb") as f:
             f.write(content)
         return str(path)
+
+    async def _cleanup_old_files(self):
+        """Deletes video and output files older than 24 hours to manage storage."""
+        cutoff_time = time.time() - (24 * 3600)
+        
+        for directory in [self.uploads_dir, self.output_dir]:
+            try:
+                for file_path in directory.iterdir():
+                    if file_path.is_file() and file_path.stat().st_mtime < cutoff_time:
+                        file_path.unlink(missing_ok=True)
+            except Exception as e:
+                pass # Fail silently on cleanup errors
 
 file_repository = FileRepository()
