@@ -1,0 +1,47 @@
+{
+  "app_name": "Frame Talk",
+  "domain": "frame-talk.com",
+  "version": "1.0.0",
+  "models": {
+    "vision_model": "gemini-3.7-flash",
+    "script_model": "gemini-3.7-flash",
+    "qa_model": "gemini-3.7-flash",
+    "eval_model": "gemini-3.7-flash",
+    "tts_model": "gemini-3.1-flash-tts-preview"
+  },
+  "voices": {
+    "default_male": "Puck",
+    "default_female": "Kore",
+    "male_host_name": "Mark",
+    "female_host_name": "Sarah"
+  },
+  "retries": {
+    "max_attempts": 4,
+    "initial_delay_sec": 2.0,
+    "backoff_multiplier": 2.0,
+    "retriable_status_codes": [429, 500, 502, 503, 504],
+    "non_retriable_status_codes": [400, 401, 403, 404]
+  },
+  "timeouts": {
+    "gemini_api_sec": 120,
+    "file_processing_wait_max_sec": 180,
+    "openrouter_api_sec": 60
+  },
+  "storage": {
+    "uploads_dir": "uploads",
+    "output_dir": "output",
+    "public_dir": "public"
+  },
+  "clickhouse": {
+    "host": "localhost",
+    "port": 8123,
+    "database": "castops",
+    "table": "sync_events"
+  },
+  "video_limits": {
+    "min_duration_seconds": 30.0,
+    "max_duration_seconds": 300.0,
+    "max_file_size_mb": 500.0,
+    "supported_extensions": [".mp4", ".webm", ".mov", ".mkv"]
+  }
+}

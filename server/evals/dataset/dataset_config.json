@@ -1,0 +1,10 @@
+{
+  "dataset_name": "Idea Lint Screencast Benchmark",
+  "version": "1.0.0",
+  "description": "Ground truth multimodal video decomposition and dialogue for Idea Lint screencast (4m22s).",
+  "video_file": "Aufzeichnung 2026-08-30 094915.mp4",
+  "video_duration_seconds": 262.0,
+  "expected_scenes_file": "expected_scenes.json",
+  "expected_dialogue_file": "expected_dialogue.json",
+  "sample_readme_file": "sample_readme.md"
+}

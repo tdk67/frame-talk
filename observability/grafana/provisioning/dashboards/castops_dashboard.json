@@ -1,0 +1,213 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "CastOps AI Studio - Real-Time Time-Series Sync Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 150 },
+              { "color": "red", "value": 300 }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "id": 2,
+      "options": {
+        "reduceOptions": {
+          "calcs": ["max"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "title": "Max Timing Drift (ms)",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT max(abs(accumulated_drift_ms)) as max_drift FROM castops.sync_events",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "ms"
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "id": 3,
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "title": "Total Frame Freeze Injected (ms)",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT sum(required_freeze_ms) as total_freeze FROM castops.sync_events",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "title": "Estimated Token & TTS Cost",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT sum(token_cost) as total_cost FROM castops.sync_events",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+      "id": 5,
+      "options": {
+        "reduceOptions": {
+          "calcs": ["count"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "title": "Total Micro-Dialogue Turns",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT count(*) as total_turns FROM castops.sync_events",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "opacity",
+            "lineInterpolation": "linear"
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "id": 6,
+      "title": "Audio Duration vs Required Freeze per Turn",
+      "type": "timeseries",
+      "targets": [
+        {
+          "rawSql": "SELECT event_time, audio_duration_ms, required_freeze_ms FROM castops.sync_events ORDER BY event_time",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "id": 7,
+      "title": "Alignment Drift Delta Over Video Timeline",
+      "type": "timeseries",
+      "targets": [
+        {
+          "rawSql": "SELECT event_time, accumulated_drift_ms FROM castops.sync_events ORDER BY event_time",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 15 },
+      "id": 8,
+      "title": "Real-Time Synchronization Time-Series Events Log",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT event_time, speaker, dialogue_text, audio_duration_ms, required_freeze_ms, pacing_status FROM castops.sync_events ORDER BY event_time DESC LIMIT 50",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["castops", "multimodal", "clickhouse", "synchronization"],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "CastOps AI Studio - Observability Dashboard",
+  "version": 1
+}

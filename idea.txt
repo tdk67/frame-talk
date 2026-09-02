@@ -1,0 +1,54 @@
+# CastOps AI: The Multimodal Screen-to-Podcast Studio Engine
+
+## Hackathon
+https://agentic-cinema.devpost.com/?utm_source=devpost&utm_medium=alert&utm_campaign=20260828_prev_related_reg
+
+my old tool that I can rewrite for this hackathon: https://github.com/tdk67/screencast-podcast
+
+
+## 📘 Project Description & Architecture
+
+### The Core Concept
+An autonomous, data-driven multi-agent media production pipeline that breathes life into static developer materials. The system ingests two raw assets: a silent, unedited application screen recording (`.mp4`) and standard markdown technical documentation (`README.md`). 
+
+Instead of generating basic voiceovers, a multi-modal orchestrator comprehends visual user interface actions in sequence and transforms them into an engaging, high-production, two-character technical discussion podcast. The engine dynamically calculates timing offsets, generating a perfectly synchronized marketing or educational video tutorial where the visuals stretch, freeze, or transition in lockstep with the generated dialogue.
+
+### How It Works (The Multi-Agent Workflow)
+1. **The Ingestion & Alignment Agent:** A native multimodal agent parses the timeline of the screen capture, cross-referencing visual events (button clicks, latency lags, layout changes) with the engineering data inside the documentation.
+2. **The Scriptwriter Persona Agent:** Takes the structural timeline array and crafts a natural, conversational script adopting two distinct, contrasting personas (e.g., an inquisitive host and a deep technical systems architect).
+3. **The Chronos Sync Engine (The Key Innovation):** Rather than guessing text lengths, the script is split into micro-dialogue blocks. Each block is generated via Text-to-Speech (TTS). The system calculates the exact runtime duration of each audio slice down to the millisecond.
+4. **The Compiler Agent:** Compiles the video by reading the precise millisecond offsets, dynamically injecting calculated frame-freezes or video-loops into the silent screencast so that the background video stays aligned with the pacing of the spoken podcast discussion.
+
+---
+
+## 📋 Rules Regarding Existing Code & Clean Repositories
+
+* **The Clean Repository Rule:** You **cannot** simply link to your historical, pre-existing GitHub repository. Devpost submission filters check the creation dates of repositories. You must create a **brand-new, clean public repository** (on GitHub, GitLab, or Bitbucket) during the hackathon timeline.
+* **The Open Source Requirement:** Your new repository must contain a recognized, valid open-source license (such as MIT, Apache 2.0, or GNU GPL) in a root `LICENSE` file. Without this, your submission is automatically disqualified.
+* **The Refactoring Allowance:** It is completely permissible to copy-paste your underlying core logic (e.g., your custom video rendering algorithms, file handlers, or specific TTS wrappers) from your old project into your new repository. However, the majority of the commits in the new repository should demonstrate the implementation of the *new multi-agent infrastructure* and the mandatory *hackathon partner tools* during the event window.
+
+---
+
+## 🛠️ Mandatory Technical Stack
+
+To pass the technical screening panel, your code codebase must actively invoke and rely on two required technological layers at runtime:
+
+### 1. The Google Cloud Layer (The Core Brain)
+* **Gemini Enterprise:** You must pass your raw video files and text files directly to **Gemini Enterprise** models (such as Gemini 1.5 Pro). Your architecture needs to highlight Gemini's native multimodal token execution—proving that it is analyzing the actual raw `.mp4` visual pixels directly rather than an external text-transcription or static frames.
+* **Google Cloud Vertex AI / Agent Builder:** Your application logic should step away from standard, rigid backend routing scripts. Instead, individual prompts must be organized as distinct agents inside a managed agentic workflow framework.
+
+### 2. The Partner Track Layer (Choose at Least One)
+To be eligible for the main prize tracks, your system must integrate one of the official technical event sponsors into the application code loop. Given your synchronization challenges, the **ClickHouse + Grafana** path is your strongest engineering option:
+
+* **ClickHouse (Data Logging Layer):** You must show working database connectors inside your repository. As your Python backend generates speech fragments, the exact text inputs, generated audio clip filenames, target video segment lengths, and calculated millisecond offsets (`required_freeze_ms`) must be written to a live ClickHouse table. ClickHouse acts as the real-time time-series index that your video compiler queries to stitch the final frames together.
+* **Grafana Labs (Observability Layer):** You must supply a dashboard config or display a live dashboard in your demo video. This dashboard tracks real-time generation metrics: pipeline processing latency, audio-to-video alignment deltas, API token usage costs, and script generation progress bars.
+* *(Alternative Partner Option)* **Replit:** If you prefer not to use ClickHouse/Grafana, you can build, test, and host your entire application code loop using **Replit**, explicitly utilizing the **Replit Agent** to generate your user interface or build automated cloud deployment modules for your project.
+
+---
+
+## 🎯 Key Evaluation Deliverables for Submission
+
+When submitting on Devpost before the **September 9, 2026 (2:00 PM PDT)** deadline, ensure you provide:
+1. **The Live App URL:** A link where judges can see the app running or view documentation to test it.
+2. **The 3-Minute Video:** A screen recording walkthrough focusing heavily on the *technical architecture*. It should show the agent actively breaking down the video, saving data points to your partner stack (e.g., ClickHouse logs or Grafana dashboards), and outputting the synced media. 
+3. **The System Diagram:** A clear image file showing how Gemini, your Python backend processing, and the chosen partner API map together.

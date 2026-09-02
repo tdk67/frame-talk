@@ -1,0 +1,17 @@
+:root {
+    --color-cream: #FBF8F2;
+    --color-navy: #0C2A4A;
+    --color-blue: #2E6FB8;
+    --color-sky-soft: #EAF2FB;
+    --color-ink: #2C2C2A;
+    --color-muted: #5F5E5A;
+    --color-card: #FFFFFF;
+    --color-border: #ECE3D3;
+    --font-display: "Bricolage Grotesque", "Inter", sans-serif;
+    --font-sans: "Inter", sans-serif;
+    --font-hand: "Caveat", cursive;
+    --font-mono: "JetBrains Mono", monospace;
+    --shadow-soft: 0 18px 40px -24px rgba(12, 42, 74, 0.28);
+    --shadow-lift: 0 28px 60px -28px rgba(12, 42, 74, 0.35);
+    --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}

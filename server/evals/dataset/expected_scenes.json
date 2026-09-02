@@ -1,0 +1,101 @@
+[
+  {
+    "scene_id": "scene_1",
+    "timestamp_str": "00:00 - 00:30",
+    "start_time_ms": 0,
+    "end_time_ms": 30000,
+    "action_title": "Landing Page & Debate Pitch Setup",
+    "on_screen": "The landing page of Idea Lint (\"Stop Guessing. Start Validating.\") displaying value propositions (6 AI Agents, 5 min debate, privacy features, and step-by-step workflow).",
+    "user_action": "The user scrolls through the features and pricing sections, clicks \"Start Your First Debate\", checks the Model API Settings (BYOK) modal, closes it, and enters an idea pitch for \"Song Blueprint Analyser\" into the debate input box.",
+    "app_reaction": "The app navigates to the Command Center dashboard, opens and closes the BYOK modal smoothly, and accepts the text input in the prompt bar.",
+    "key_entities": ["Idea Lint", "Stop Guessing. Start Validating.", "6 AI Agents", "Start Your First Debate", "Model API Settings", "BYOK", "Song Blueprint Analyser", "Command Center"]
+  },
+  {
+    "scene_id": "scene_2",
+    "timestamp_str": "00:31 - 01:00",
+    "start_time_ms": 31000,
+    "end_time_ms": 60000,
+    "action_title": "Live Debate Stream Launch",
+    "on_screen": "The Live Debate Stream launches, showing active agent tabs (Researcher, Advocate, Critic, Creative, Judge, PRD Writer, Security Auditor).",
+    "user_action": "The user clicks \"Start Debate\" and observes the initial setup.",
+    "app_reaction": "The app creates a debate session (Run ID 70711cal), updates the status badge to RUNNING, adds the idea to the local list, and triggers the Researcher agent (Gemini 2.5 Flash).",
+    "key_entities": ["Live Debate Stream", "Researcher", "Advocate", "Critic", "Creative", "Judge", "PRD Writer", "Security Auditor", "Run ID 70711cal", "RUNNING", "Gemini 2.5 Flash"]
+  },
+  {
+    "scene_id": "scene_3",
+    "timestamp_str": "01:01 - 01:30",
+    "start_time_ms": 61000,
+    "end_time_ms": 90000,
+    "action_title": "Backend Cloud Logs Monitoring",
+    "on_screen": "A quick switch to an external browser tab showing the Google Cloud Logs Explorer console for the backend service (VentureBot).",
+    "user_action": "The user monitors backend Cloud Run logs in real-time.",
+    "app_reaction": "The Google Cloud console refreshes incoming HTTP GET/POST requests and streaming SSE (Server-Sent Events) logs handling the agent chain execution.",
+    "key_entities": ["Google Cloud Logs Explorer", "VentureBot", "Cloud Run", "SSE", "Server-Sent Events"]
+  },
+  {
+    "scene_id": "scene_4",
+    "timestamp_str": "01:31 - 02:00",
+    "start_time_ms": 91000,
+    "end_time_ms": 120000,
+    "action_title": "Multi-Agent Debate Progression",
+    "on_screen": "Continued monitoring of Google Cloud Logs, followed by switching back to the Idea Lint app where the debate has progressed through the Advocate and Creative stages.",
+    "user_action": "The user switches tabs back to the web application and scrolls through the debate output.",
+    "app_reaction": "Idea Lint renders structured markdown outputs from the Advocate (showing a text-based system architecture diagram and feature gaps) and begins streaming the Creative agent's niche analysis.",
+    "key_entities": ["Google Cloud Logs", "Idea Lint", "Advocate", "Creative", "system architecture diagram", "feature gaps"]
+  },
+  {
+    "scene_id": "scene_5",
+    "timestamp_str": "02:01 - 02:30",
+    "start_time_ms": 121000,
+    "end_time_ms": 150000,
+    "action_title": "Judge's Verdict & Competitor Breakdown",
+    "on_screen": "Detailed text streams for market signals, competitor breakdowns (e.g., Moises.ai, Cyanite, Tunebat), and the Judge's Verdict & Scorecard.",
+    "user_action": "The user scrolls up and down the debate stream to review competitor benchmarks and evaluation scores.",
+    "app_reaction": "The app calculates and displays top-line scores (Novelty: 5/10, Feasibility: 5/10, Market Fit: 6/10, overall: 5.33) with a verdict recommendation of PARK.",
+    "key_entities": ["Moises.ai", "Cyanite", "Tunebat", "Judge's Verdict & Scorecard", "Novelty: 5/10", "Feasibility: 5/10", "Market Fit: 6/10", "5.33", "PARK"]
+  },
+  {
+    "scene_id": "scene_6",
+    "timestamp_str": "02:31 - 03:00",
+    "start_time_ms": 151000,
+    "end_time_ms": 180000,
+    "action_title": "Human-in-the-Loop Decision Gate",
+    "on_screen": "The Judge section summary, the completed status pill (DONE 1:56), and the Human-in-the-Loop gate prompt (\"Debate complete — PRD and evaluation ready!\").",
+    "user_action": "The user reviews the key debate trade-offs, architecture decisions, and mitigation points.",
+    "app_reaction": "The app halts automated progression at the decision gate, providing an action button: \"Debate complete — PRD and evaluation ready!\".",
+    "key_entities": ["Judge section summary", "DONE 1:56", "Debate complete — PRD and evaluation ready!", "Human-in-the-Loop gate"]
+  },
+  {
+    "scene_id": "scene_7",
+    "timestamp_str": "03:01 - 03:30",
+    "start_time_ms": 181000,
+    "end_time_ms": 210000,
+    "action_title": "Historical Idea Detail Workspace",
+    "on_screen": "Full history view of the debate stream and idea repository list below.",
+    "user_action": "The user clicks into the saved idea card to open the Idea Detail Workspace.",
+    "app_reaction": "The app transitions to the detailed workspace view showing sub-tabs (PRD, Research Brief, Advocate, Critic, Creative Angles, User Transcript) and a prompt box for feedback/next debate runs.",
+    "key_entities": ["Idea Detail Workspace", "PRD", "Research Brief", "Advocate", "Critic", "Creative Angles", "User Transcript"]
+  },
+  {
+    "scene_id": "scene_8",
+    "timestamp_str": "03:31 - 04:00",
+    "start_time_ms": 211000,
+    "end_time_ms": 240000,
+    "action_title": "PRD Synthesis & Security Audit Iteration",
+    "on_screen": "Reviewing the Research Brief tab, selecting a preset prompt, and initiating PRD synthesis.",
+    "user_action": "The user reviews open technical questions, clicks the feedback preset button [Approve] Generate PRD with mitigations, types custom directives into the prompt box, and submits.",
+    "app_reaction": "The app initiates a second cycle (RUN #2), transitions the idea status to ACTIVE, invokes the PRD Writer and Security Auditor agents, and renders audit findings regarding acceptance criteria.",
+    "key_entities": ["Research Brief tab", "[Approve] Generate PRD with mitigations", "RUN #2", "ACTIVE", "PRD Writer", "Security Auditor"]
+  },
+  {
+    "scene_id": "scene_9",
+    "timestamp_str": "04:01 - 04:21",
+    "start_time_ms": 241000,
+    "end_time_ms": 262000,
+    "action_title": "Generated PRD & Print Export",
+    "on_screen": "The main command center idea list, selecting another idea (\"The Doomsday Clock\"), and opening the generated Product Requirements Document (PRD).",
+    "user_action": "The user returns to the dashboard, opens the details for \"The Doomsday Clock\", and clicks \"Print / Save as PDF\".",
+    "app_reaction": "The application renders a full PRD view containing functional requirements, mermaid sequence diagrams, acceptance criteria, and milestones, then opens the clean print-preview page.",
+    "key_entities": ["The Doomsday Clock", "Print / Save as PDF", "mermaid sequence diagrams", "acceptance criteria", "print-preview page"]
+  }
+]

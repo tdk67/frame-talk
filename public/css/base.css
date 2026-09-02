@@ -1,0 +1,115 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    /*
+     * Premium Soft Mesh Gradient — Matching Planned Design
+     *
+     * Planned design characteristics:
+     *   - LEFT:   Soft medium slate-blue (text fully readable)
+     *   - CENTER: Bright airy white wash (behind wizard card)
+     *   - RIGHT:  Gentle warm peach/apricot glow
+     *   - FEEL:   Pastel, diffused, dreamy — NOT harsh or contrasty
+     */
+    background-color: #B5CDE0;
+    background-image:
+        /* 1. Bright airy center — luminous reading area */
+        radial-gradient(ellipse 80% 70% at 50% 35%,
+            rgba(255, 255, 255, 0.90) 0%,
+            rgba(245, 249, 255, 0.60) 50%,
+            transparent 85%),
+
+        /* 2. Left soft medium blue — sidebar readable zone */
+        radial-gradient(circle farthest-side at -5% 50%,
+            rgba(75, 125, 185, 0.70) 0%,
+            rgba(105, 155, 210, 0.40) 45%,
+            transparent 80%),
+
+        /* 3. Top-left blue accent wash */
+        radial-gradient(circle farthest-corner at 10% 5%,
+            rgba(85, 135, 195, 0.55) 0%,
+            rgba(125, 170, 220, 0.28) 50%,
+            transparent 82%),
+
+        /* 4. Right soft warm peach — gentle apricot glow */
+        radial-gradient(circle farthest-side at 108% 55%,
+            rgba(245, 175, 120, 0.72) 0%,
+            rgba(250, 200, 155, 0.42) 45%,
+            transparent 80%),
+
+        /* 5. Bottom-right warm reinforcement */
+        radial-gradient(circle farthest-corner at 90% 92%,
+            rgba(248, 190, 140, 0.50) 0%,
+            rgba(252, 215, 175, 0.25) 50%,
+            transparent 82%),
+
+        /* 6. Bottom-center soft lavender bridge */
+        radial-gradient(ellipse at 50% 105%,
+            rgba(175, 150, 220, 0.25) 0%,
+            transparent 55%);
+    background-attachment: fixed;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Typography Base */
+h1 {
+    font-family: var(--font-display);
+    color: var(--color-navy);
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 0.75rem;
+}
+
+h2 {
+    font-family: var(--font-display);
+    color: var(--color-navy);
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.subtitle {
+    color: var(--color-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.handwritten {
+    font-family: var(--font-hand);
+    font-size: 1.8rem;
+    color: var(--color-blue);
+    display: inline-block;
+    transform: rotate(-1.5deg);
+    margin-left: 0.25rem;
+    vertical-align: middle;
+}
+
+.handwritten-badge {
+    font-family: var(--font-hand);
+    font-size: 1.15rem;
+    color: var(--color-blue);
+    transform: rotate(-3deg);
+    display: inline-block;
+}
+
+.handwritten-note {
+    font-family: var(--font-hand);
+    font-size: 1.05rem;
+    color: var(--color-blue);
+}

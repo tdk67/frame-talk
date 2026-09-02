@@ -1,0 +1,120 @@
+/**
+ * CastOps AI Studio - API Client
+ * Bridges the browser studio with the FastAPI Python multi-agent backend.
+ */
+
+const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+    ? ''
+    : '';
+
+function getHeaders(apiKey) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey && typeof apiKey === 'string' && apiKey.trim()) {
+        headers['X-API-Key'] = apiKey.trim();
+    }
+    return headers;
+}
+
+export const api = {
+    async checkHealth() {
+        try {
+            const res = await fetch(`${API_BASE}/api/health`);
+            return await res.json();
+        } catch (e) {
+            return { status: 'offline', clickhouse_connected: false };
+        }
+    },
+
+    async uploadAssets(videoFile, readmeFile) {
+        const formData = new FormData();
+        if (videoFile) formData.append('video', videoFile);
+        if (readmeFile) formData.append('readme', readmeFile);
+
+        const res = await fetch(`${API_BASE}/api/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
+        return await res.json();
+    },
+
+    async analyzeVideo(videoFilename, readmeText, videoDurationSeconds, apiKey) {
+        const res = await fetch(`${API_BASE}/api/analyze-video`, {
+            method: 'POST',
+            headers: getHeaders(apiKey),
+            body: JSON.stringify({
+                video_filename: videoFilename,
+                readme_text: readmeText,
+                video_duration_seconds: videoDurationSeconds
+            })
+        });
+        if (!res.ok) throw new Error(`Analysis failed: ${await res.text()}`);
+        return await res.json();
+    },
+
+    async generateScript(scenes, readmeText, apiKey) {
+        const res = await fetch(`${API_BASE}/api/generate-script`, {
+            method: 'POST',
+            headers: getHeaders(apiKey),
+            body: JSON.stringify({
+                scenes,
+                readme_text: readmeText
+            })
+        });
+        if (!res.ok) throw new Error(`Script generation failed: ${await res.text()}`);
+        return await res.json();
+    },
+
+    async auditScript(scenes, dialogue, readmeText, apiKey) {
+        const res = await fetch(`${API_BASE}/api/audit-script`, {
+            method: 'POST',
+            headers: getHeaders(apiKey),
+            body: JSON.stringify({
+                scenes,
+                dialogue,
+                readme_text: readmeText
+            })
+        });
+        if (!res.ok) throw new Error(`QA audit failed: ${await res.text()}`);
+        return await res.json();
+    },
+
+    async synthesizeAudio(scenes, dialogue, voiceAlex, voiceSam, apiKey) {
+        const res = await fetch(`${API_BASE}/api/synthesize-audio`, {
+            method: 'POST',
+            headers: getHeaders(apiKey),
+            body: JSON.stringify({
+                scenes,
+                dialogue,
+                voice_alex: voiceAlex,
+                voice_sam: voiceSam
+            })
+        });
+        if (!res.ok) throw new Error(`Synthesis failed: ${await res.text()}`);
+        return await res.json();
+    },
+
+    async compileVideo(sessionId, videoFilename, audioFilename, chronosSchedule) {
+        const res = await fetch(`${API_BASE}/api/compile-video`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                video_filename: videoFilename,
+                audio_filename: audioFilename,
+                chronos_schedule: chronosSchedule
+            })
+        });
+        if (!res.ok) throw new Error(`Video compilation failed: ${await res.text()}`);
+        return await res.json();
+    },
+
+    async getClickHouseEvents(sessionId) {
+        const url = sessionId 
+            ? `${API_BASE}/api/clickhouse/events?session_id=${encodeURIComponent(sessionId)}`
+            : `${API_BASE}/api/clickhouse/events`;
+        const res = await fetch(url);
+        if (!res.ok) return { events: [], metrics: {} };
+        return await res.json();
+    }
+};

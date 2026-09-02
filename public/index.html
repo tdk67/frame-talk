@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frame Talk: Multimodal Screen-to-Podcast Engine</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
+    <!-- Style Sheets (Bricolage Grotesque, Caveat & Cream Theme) -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <span class="logo-icon">F</span>
+                <span class="logo-text">Frame Talk</span>
+            </a>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);">
+                    <span class="status-dot" style="background:#4ade80;">●</span> <span>gemini-3.7-flash</span>
+                </div>
+                <div id="clickhouse-status-badge" class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);">
+                    <span class="status-dot" style="background:#60a5fa;">●</span> <span id="clickhouse-status-text">ClickHouse Ready</span>
+                </div>
+                <div id="api-status-badge" class="api-badge unconfigured" onclick="openKeyModal()">
+                    <span class="status-dot">●</span> <span id="api-status-text">Set API Key</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard 3-Column Layout Wrapper -->
+    <div class="dashboard-layout">
+        
+        <!-- Left Sidebar: Project & Asset Context -->
+        <aside class="sidebar sidebar-left">
+            <!-- Active Project Info -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-title">
+                    <span>Active Project Info</span>
+                    <span class="handwritten-badge">Multimodal Sync</span>
+                </div>
+                <div class="asset-item" id="sidebar-asset-video">
+                    <span class="asset-icon">📁</span>
+                    <div class="asset-details">
+                        <div class="asset-label">Active Screencast:</div>
+                        <div class="asset-name" id="sidebar-video-name">No video uploaded</div>
+                    </div>
+                </div>
+                <div class="asset-item" id="sidebar-asset-readme">
+                    <span class="asset-icon">📄</span>
+                    <div class="asset-details">
+                        <div class="asset-label">Active README:</div>
+                        <div class="asset-name" id="sidebar-readme-name">No README uploaded</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Host Profiles -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-title">Host Profiles</div>
+                <div class="host-profile-item">
+                    <div class="host-avatar male">M</div>
+                    <div class="host-details">
+                        <div class="host-name">Mark</div>
+                        <div class="host-role">Lead Systems Architect</div>
+                    </div>
+                </div>
+                <div class="host-profile-item">
+                    <div class="host-avatar female">S</div>
+                    <div class="host-details">
+                        <div class="host-name">Sarah</div>
+                        <div class="host-role">Dev Advocate & UX Specialist</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pipeline Progress -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-title">Pipeline Progress</div>
+                <ul class="pipeline-list">
+                    <li id="pipe-step-1" class="pipe-item active">
+                        <span class="pipe-check">☑</span> 1. Asset Ingestion
+                    </li>
+                    <li id="pipe-step-2" class="pipe-item">
+                        <span class="pipe-check">☐</span> 2. Multimodal UI Scenes
+                    </li>
+                    <li id="pipe-step-3" class="pipe-item">
+                        <span class="pipe-check">☐</span> 3. Scripting & QA Audit
+                    </li>
+                    <li id="pipe-step-4" class="pipe-item">
+                        <span class="pipe-check">☐</span> 4. Voice Config & Chronos
+                    </li>
+                    <li id="pipe-step-5" class="pipe-item">
+                        <span class="pipe-check">☐</span> 5. Synchronized Studio
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Column (Wizard & Cards) -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero">
+                <h1>Frame Talk: Screencast to <span class="handwritten">podcast walkthrough!</span></h1>
+                <p class="subtitle">Turn silent developer screencasts into an engaging, perfectly synchronized two-host podcast video using gemini-3.7-flash and Chronos timeline stretching.</p>
+            </section>
+
+            <!-- Steps Navigation -->
+            <nav class="steps-nav">
+                <button id="tab-step-1" class="step-tab active" onclick="navigateToStep(1)">
+                    <span class="step-number">1</span> Upload Files
+                </button>
+                <button id="tab-step-2" class="step-tab" onclick="navigateToStep(2)" disabled>
+                    <span class="step-number">2</span> UI Scenes
+                </button>
+                <button id="tab-step-3" class="step-tab" onclick="navigateToStep(3)" disabled>
+                    <span class="step-number">3</span> Podcast Script
+                </button>
+                <button id="tab-step-4" class="step-tab" onclick="navigateToStep(4)" disabled>
+                    <span class="step-number">4</span> Voice & Chronos
+                </button>
+                <button id="tab-step-5" class="step-tab" onclick="navigateToStep(5)" disabled>
+                    <span class="step-number">5</span> Studio Sync
+                </button>
+            </nav>
+
+            <!-- Step 1: Upload Zone -->
+            <div id="step-card-1" class="wizard-card active">
+                <h2>Frame Talk Studio Ingestion</h2>
+                
+                <!-- How it works -->
+                <div class="how-it-works-box" id="how-it-works" style="margin-bottom: 2.5rem; border-bottom: 2px dashed var(--color-border); padding-bottom: 2.5rem; margin-top: 1.5rem;">
+                    <h3 style="font-family: var(--font-display); color: var(--color-navy); margin-bottom: 1rem; font-size: 1.25rem;">
+                        🤔 How Frame Talk works
+                    </h3>
+                    <p style="color: var(--color-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                        Frame Talk turns silent screen recordings into highly engaging, conversational walkthrough videos. While tools like NotebookLM can generate audio summaries from text, they are completely blind to unedited silent screencasts. Frame Talk pairs <strong>gemini-3.7-flash</strong> multimodal vision with the <strong>Chronos Sync Engine</strong> to hold/freeze frames when discussions go deep, guaranteeing 100% video-audio lockstep.
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
+                        <div style="background: var(--color-cream); padding: 1rem; border-radius: 12px; border: 1px solid var(--color-border);">
+                            <div style="font-family: var(--font-hand); color: var(--color-blue); font-size: 1.2rem; text-align: right;">01</div>
+                            <div style="font-weight: 700; color: var(--color-navy); font-size: 0.9rem; margin-bottom: 0.25rem;">Asset Ingest</div>
+                            <div style="font-size: 0.8rem; color: var(--color-muted);">Upload silent video (.mp4) and project README.md text.</div>
+                        </div>
+                        <div style="background: var(--color-cream); padding: 1rem; border-radius: 12px; border: 1px solid var(--color-border);">
+                            <div style="font-family: var(--font-hand); color: var(--color-blue); font-size: 1.2rem; text-align: right;">02</div>
+                            <div style="font-weight: 700; color: var(--color-navy); font-size: 0.9rem; margin-bottom: 0.25rem;">Multimodal Vision</div>
+                            <div style="font-size: 0.8rem; color: var(--color-muted);">gemini-3.7-flash analyzes raw video pixels to anchor UI scenes.</div>
+                        </div>
+                        <div style="background: var(--color-cream); padding: 1rem; border-radius: 12px; border: 1px solid var(--color-border);">
+                            <div style="font-family: var(--font-hand); color: var(--color-blue); font-size: 1.2rem; text-align: right;">03</div>
+                            <div style="font-weight: 700; color: var(--color-navy); font-size: 0.9rem; margin-bottom: 0.25rem;">Live Dialogue</div>
+                            <div style="font-size: 0.8rem; color: var(--color-muted);">Drafts natural two-host banter with zero robotic timestamps.</div>
+                        </div>
+                        <div style="background: var(--color-cream); padding: 1rem; border-radius: 12px; border: 1px solid var(--color-border);">
+                            <div style="font-family: var(--font-hand); color: var(--color-blue); font-size: 1.2rem; text-align: right;">04</div>
+                            <div style="font-weight: 700; color: var(--color-navy); font-size: 0.9rem; margin-bottom: 0.25rem;">Chronos Sync</div>
+                            <div style="font-size: 0.8rem; color: var(--color-muted);">Meters TTS PCM length and stretches video with frame-holds.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="font-family: var(--font-display); color: var(--color-navy); font-size: 1.35rem; margin-bottom: 1.25rem;">
+                    Upload Walkthrough Assets
+                </h3>
+                
+                <div class="note-bubble">
+                    <p class="note-bubble-text">💡 Tip: Upload any silent app recording. gemini-3.7-flash will extract on-screen actions and align them with your README!</p>
+                </div>
+
+                <!-- Video Dropzone -->
+                <div class="form-group">
+                    <label>1. Screen Capture Video File (.mp4, .webm)</label>
+                    <div id="video-dropzone" class="dropzone" onclick="document.getElementById('video-input').click()">
+                        <div class="dropzone-icon">📹</div>
+                        <div class="dropzone-text">Drag and drop your video file here, or click to browse</div>
+                        <input type="file" id="video-input" accept="video/mp4,video/webm" style="display: none;">
+                    </div>
+                    <div id="video-file-list" class="file-list"></div>
+                </div>
+
+                <!-- README Dropzone -->
+                <div class="form-group">
+                    <label>2. Project README.md File (.md or .txt)</label>
+                    <div id="readme-dropzone" class="dropzone" onclick="document.getElementById('readme-input').click()">
+                        <div class="dropzone-icon">📄</div>
+                        <div class="dropzone-text">Drag and drop your README file here, or click to browse</div>
+                        <input type="file" id="readme-input" accept=".md,.txt" style="display: none;">
+                    </div>
+                    <div id="readme-file-list" class="file-list"></div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="btn-to-step-2" class="btn btn-primary" onclick="analyzeVideo()" disabled>
+                        Analyze Video Screen with gemini-3.7-flash ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: UI Action Transcript & Scenes -->
+            <div id="step-card-2" class="wizard-card">
+                <h2>Multimodal Visual Scenes Timeline</h2>
+                <p style="color: var(--color-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                    gemini-3.7-flash parsed your screencast pixels and mapped UI states to your README documentation.
+                <!-- Video Description Precision & Grounding Audit -->
+                <div id="video-eval-section" class="qa-report-card" style="display: none; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <h3 style="font-family: var(--font-display); color: var(--color-navy); font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                            🛡️ Video Description Precision & Grounding Eval
+                        </h3>
+                        <span id="video-eval-badge" style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 12px; font-weight: 700;">
+                            PASSED
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.72rem; color: var(--color-muted); font-weight: 600;">Overall Precision</div>
+                            <div id="video-eval-score" style="font-size: 1.25rem; font-weight: 800; color: var(--color-navy);">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.72rem; color: var(--color-muted); font-weight: 600;">Specificity Density</div>
+                            <div id="video-eval-specificity" style="font-size: 1.25rem; font-weight: 800; color: var(--color-blue);">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.72rem; color: var(--color-muted); font-weight: 600;">Action Causality</div>
+                            <div id="video-eval-causality" style="font-size: 1.25rem; font-weight: 800; color: #2E7D32;">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.6rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.72rem; color: var(--color-muted); font-weight: 600;">Boilerplate Penalty</div>
+                            <div id="video-eval-boilerplate" style="font-size: 1.25rem; font-weight: 800; color: #2E7D32;">0 hits</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.8); padding: 0.75rem; border-radius: 10px; border: 1px solid var(--color-border);">
+                        <p id="video-eval-summary-text" style="font-size: 0.85rem; color: var(--color-ink); margin: 0; line-height: 1.4;"></p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="transcript-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 110px;">Window</th>
+                                <th style="width: 33%;">On Screen</th>
+                                <th style="width: 28%;">User Action</th>
+                                <th style="width: 28%;">App Reaction</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transcript-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="loading-overlay" id="loading-step-2">
+                    <div class="spinner"></div>
+                    <div class="progress-container" style="width: 80%; max-width: 300px; margin: 0.75rem 0; background: var(--color-border); border-radius: 4px; height: 6px; overflow: hidden;">
+                        <div class="progress-bar" id="progress-bar-step-2" style="height: 100%; background: var(--color-blue); width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text-step-2">Analyzing video with gemini-3.7-flash...</div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="generatePodcastScript()">
+                        Draft Live Dialogue Script ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Script Drafting & QA Audit -->
+            <div id="step-card-3" class="wizard-card">
+                <h2>Podcast Dialogue Script</h2>
+                <p style="color: var(--color-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                    Our AI dialogue scriptwriter crafted a snappy, natural conversation between Mark and Sarah tied to each visual scene.
+                </p>
+
+                <div id="script-lines-container">
+                    <!-- Dynamic script lines -->
+                </div>
+
+                <div class="loading-overlay" id="loading-step-3">
+                    <div class="spinner"></div>
+                    <div class="progress-text">Drafting live dialogue script with gemini-3.7-flash...</div>
+                </div>
+
+                <!-- QA Report Card -->
+                <div id="qa-report-section" class="qa-report-card" style="display: none; margin-top: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-family: var(--font-display); color: var(--color-navy); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                            🛡️ AI QA & Pacing Audit
+                        </h3>
+                        <span style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 12px; font-weight: 600;">
+                            Automated Verification
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.75rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.75rem; color: var(--color-muted); font-weight: 600;">Video Accuracy</div>
+                            <div id="qa-accuracy-score" style="font-size: 1.3rem; font-weight: 800; color: var(--color-navy);">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.75rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.75rem; color: var(--color-muted); font-weight: 600;">README Alignment</div>
+                            <div id="qa-readme-score" style="font-size: 1.3rem; font-weight: 800; color: var(--color-navy);">--</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.7); padding: 0.75rem; border-radius: 10px; text-align: center; border: 1px solid var(--color-border);">
+                            <div style="font-size: 0.75rem; color: var(--color-muted); font-weight: 600;">Banter Quality</div>
+                            <div id="qa-banter-score" style="font-size: 1.3rem; font-weight: 800; color: var(--color-navy);">--</div>
+                        </div>
+                    </div>
+
+                    <ul style="list-style: none; padding: 0; margin-bottom: 1rem; display: grid; gap: 0.4rem; font-size: 0.9rem;">
+                        <li id="chk-video-accuracy">⏳ Checking video actions accuracy...</li>
+                        <li id="chk-readme-alignment">⏳ Checking README details...</li>
+                        <li id="chk-natural-banter">⏳ Checking banter...</li>
+                        <li id="chk-no-timestamps">⏳ Verifying dialogue timestamp freedom...</li>
+                        <li id="chk-good-pacing">⏳ Verifying pacing spans entire video...</li>
+                    </ul>
+
+                    <div style="background: rgba(255,255,255,0.8); padding: 0.85rem; border-radius: 10px; border: 1px solid var(--color-border);">
+                        <div style="font-size: 0.75rem; color: var(--color-muted); font-weight: 700; margin-bottom: 0.25rem;">Auditor Feedback:</div>
+                        <p id="qa-feedback-text" style="font-size: 0.85rem; color: var(--color-ink); margin: 0; line-height: 1.4;"></p>
+                    </div>
+
+                    <div style="margin-top: 1.25rem; text-align: center;">
+                        <button class="btn btn-secondary" style="font-size: 0.9rem;" onclick="refineScriptWithFeedback()">
+                            🔄 Refine Script with QA Feedback
+                        </button>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+                    <button class="btn btn-primary" onclick="navigateToStep(4)">Proceed to Voice & Chronos ➔</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Voice Configuration & Chronos -->
+            <div id="step-card-4" class="wizard-card">
+                <h2>Configure Voices & Chronos Sync Engine</h2>
+                <div class="note-bubble">
+                    <p class="note-bubble-text">💡 Voice Engine: gemini-3.1-flash-tts-preview returns 24kHz PCM. Chronos calculates the exact millisecond duration of each spoken phrase to dynamically stretch video frames.</p>
+                </div>
+
+                <div class="loading-overlay" id="loading-step-4">
+                    <div class="spinner"></div>
+                    <div class="progress-container" style="width: 80%; max-width: 300px; margin: 0.75rem 0; background: var(--color-border); border-radius: 4px; height: 6px; overflow: hidden;">
+                        <div class="progress-bar" id="progress-bar-step-4" style="height: 100%; background: var(--color-blue); width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text-step-4">Synthesizing audio & computing Chronos offsets...</div>
+                </div>
+
+                <div class="voice-grid">
+                    <!-- Host A Settings -->
+                    <div class="voice-card">
+                        <div class="voice-card-header">
+                            <div class="voice-gender-icon">👨</div>
+                            <div>
+                                <div class="voice-card-title">Host A (Male Speaker)</div>
+                                <span class="help-text">Assigned to Mark</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="host-a-voice-select">Choose Voice (gemini-3.1-flash-tts-preview)</label>
+                            <select id="host-a-voice-select">
+                                <option value="Puck" selected>Puck (Gemini Default Male - Natural)</option>
+                                <option value="Charon">Charon (Deep Male)</option>
+                                <option value="Fenrir">Fenrir (Alternative Male)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Host B Settings -->
+                    <div class="voice-card">
+                        <div class="voice-card-header">
+                            <div class="voice-gender-icon">👩</div>
+                            <div>
+                                <div class="voice-card-title">Host B (Female Speaker)</div>
+                                <span class="help-text">Assigned to Sarah</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="host-b-voice-select">Choose Voice (gemini-3.1-flash-tts-preview)</label>
+                            <select id="host-b-voice-select">
+                                <option value="Kore" selected>Kore (Gemini Default Female - Crisp)</option>
+                                <option value="Aoede">Aoede (Clear Female)</option>
+                                <option value="Leda">Leda (Youthful Female)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="text-align: center; margin-top: 2rem;">
+                    <button class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2.5rem;" onclick="generatePodcastAudio()">
+                        🎙️ Synthesize & Execute Chronos Alignment
+                    </button>
+                </div>
+
+                <div id="podcast-audio-preview-section" class="audio-player-container" style="display: none; margin-top: 1.5rem;">
+                    <label style="margin-bottom: 0.25rem;">Concatenated Podcast Audio Preview</label>
+                    <audio id="podcast-audio-player" controls style="width: 100%;"></audio>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+                    <button class="btn btn-primary" id="btn-to-step-5" onclick="goToMergeStep()" disabled>Proceed to Synchronized Studio ➜</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Synchronized Studio Player & Capture -->
+            <div id="step-card-5" class="wizard-card">
+                <div style="text-align: center; margin-bottom: 1.5rem; position: relative;">
+                    <p style="font-family: var(--font-sans); font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; font-weight: 600;">STEP 5: SYNCHRONIZED STUDIO</p>
+                    <h2 style="justify-content: center; font-size: 2.4rem; margin-bottom: 0.5rem;">Frame Talk <span style="font-style: italic;">Studio Monitor</span></h2>
+                    <p style="color: var(--color-navy); font-size: 1.05rem; max-width: 600px; margin: 0 auto;">Watch the preview. Notice how the visual frame dynamically holds/freezes whenever discussions go in-depth, completely eliminating desynchronization.</p>
+                </div>
+
+                <!-- Chronos Metrics Breakdown -->
+                <div id="chronos-metrics-box" class="chronos-metrics-grid">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Synchronized Preview Canvas Player -->
+                <div class="video-preview-wrapper" style="margin-bottom: 1.5rem; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 16/9; position: relative; box-shadow: 0 16px 32px rgba(12, 42, 74, 0.2);">
+                    <canvas id="sync-canvas-player" style="width: 100%; height: 100%; object-fit: contain;"></canvas>
+                    <div id="freeze-indicator" class="freeze-indicator-badge">
+                        <span>⏸</span>
+                        <span>DYNAMIC VISUAL HOLD (CHRONOS)</span>
+                    </div>
+                </div>
+
+                <!-- Hidden video & audio elements for sync -->
+                <video id="sync-video-player" playsinline muted style="display: none;"></video>
+                <audio id="sync-audio-player" style="display: none;"></audio>
+
+                <!-- Player Controls -->
+                <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
+                    <button id="btn-play-preview" class="btn btn-primary" style="font-size: 1.05rem; padding: 0.85rem 2rem;">
+                        ▶ Play Interactive Preview
+                    </button>
+                    <span id="player-time-text" style="font-family: var(--font-mono); font-weight: 700; color: var(--color-navy); font-size: 0.95rem;">0.0s / 0.0s</span>
+                </div>
+
+                <!-- Production Video Compiler & Download -->
+                <div style="background: var(--color-cream); border: 1px solid var(--color-border); border-radius: 16px; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h4 style="font-family: var(--font-display); color: var(--color-navy); font-size: 1.1rem; margin-bottom: 0.25rem;">
+                            🎬 Production Video Compiler (FFmpeg Agent)
+                        </h4>
+                        <p id="compile-status-text" style="color: var(--color-muted); font-size: 0.88rem; margin: 0;">
+                            Renders a stitched 1080p MP4 with permanent frame freezes baked in.
+                        </p>
+                    </div>
+                    <button id="btn-compile-mp4" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+                        ⚡ Compile Production MP4
+                    </button>
+                </div>
+
+                <!-- ClickHouse Live Telemetry Stream -->
+                <div class="clickhouse-stream-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 style="font-family: var(--font-display); color: var(--color-navy); font-size: 1rem;">
+                            📊 ClickHouse Real-Time Time-Series Stream
+                        </h4>
+                        <a href="http://localhost:3000" target="_blank" style="color: var(--color-blue); font-size: 0.82rem; font-weight: 700; text-decoration: none;">
+                            ↗ Open Grafana Dashboard
+                        </a>
+                    </div>
+                    <div id="clickhouse-telemetry-list" class="telemetry-pill-stream">
+                        <div style="font-size: 0.8rem; color: var(--color-muted); font-family: var(--font-mono);">
+                            Awaiting playback events...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+                    <button class="btn btn-ghost" onclick="restartWorkflow()">🔄 Restart Workflow</button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Right Sidebar: AI Status & Diagnostics -->
+        <aside class="sidebar sidebar-right">
+            <!-- AI Diagnostics & Security -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-title">
+                    <span>AI Engine Status</span>
+                    <span class="handwritten-note">[gemini-3.7]</span>
+                </div>
+                <div class="security-status-box">
+                    <div class="security-header">
+                        <span class="shield-icon">⚡</span>
+                        <span class="openrouter-text">Gemini 3.7 Flash</span>
+                    </div>
+                    <div class="security-check" id="sidebar-key-status">
+                        <span class="dot-green">●</span> Multimodal Active
+                    </div>
+                    <div class="security-desc">
+                        Direct video token execution + raw PCM duration metering
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Agent Status -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-title">AI Agent Status</div>
+                <ul class="agent-status-list">
+                    <li id="agent-transcript-status" class="agent-status-item">
+                        <span class="status-box">☐</span> Ingestion Agent: Pending
+                    </li>
+                    <li id="agent-script-status" class="agent-status-item">
+                        <span class="status-box">☐</span> Scriptwriter Agent: Pending
+                    </li>
+                    <li id="agent-qa-status" class="agent-status-item">
+                        <span class="status-box">☐</span> QA Pacing Audit: Pending
+                    </li>
+                    <li id="agent-chronos-status" class="agent-status-item">
+                        <span class="status-box">☐</span> Chronos Sync: Pending
+                    </li>
+                </ul>
+            </div>
+
+            <!-- QA Auditor Overview -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-title">QA Auditor Overview</div>
+                <div class="sidebar-qa-scores">
+                    <div class="sidebar-qa-row">
+                        <span>Video Accuracy:</span>
+                        <strong id="sidebar-qa-accuracy">--</strong>
+                    </div>
+                    <div class="sidebar-qa-row">
+                        <span>README Alignment:</span>
+                        <strong id="sidebar-qa-readme">--</strong>
+                    </div>
+                    <div class="sidebar-qa-row">
+                        <span>Banter Quality:</span>
+                        <strong id="sidebar-qa-banter">--</strong>
+                    </div>
+                </div>
+                <div class="sidebar-qa-msg" id="sidebar-qa-msg">
+                    Audit will run automatically after dialogue generation.
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Key Validation Modal -->
+    <div id="key-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 style="margin-bottom: 1rem;">Configure API Key</h2>
+            <p style="color: var(--color-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                Enter your Gemini API key (starts with AIzaSy) or OpenRouter API key. It is stored securely in your browser's localStorage.
+            </p>
+            <div class="form-group">
+                <label for="api-key-input">API Key</label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy... or sk-or-...">
+                <p id="key-error-msg" style="color: #D32F2F; font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                <button class="btn btn-ghost" onclick="closeKeyModal()">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-key" onclick="saveAndVerifyKey()">Validate & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Frame Talk. Built with ☕ and Bricolage Grotesque for the Agentic Cinema Hackathon.</p>
+    </footer>
+
+    <!-- App Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

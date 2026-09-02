@@ -1,0 +1,21 @@
+{
+  "name": "castops-ai",
+  "version": "1.0.0",
+  "description": "CastOps AI: The Multimodal Screen-to-Podcast Studio Engine",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "npx serve public -l 8000"
+  },
+  "keywords": [
+    "multimodal",
+    "gemini",
+    "podcast",
+    "video-sync",
+    "screencast",
+    "clickhouse",
+    "grafana",
+    "agentic-ai"
+  ],
+  "author": "CastOps AI Team",
+  "license": "MIT"
+}

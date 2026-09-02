@@ -1,0 +1,162 @@
+[
+  {
+    "turn_index": 0,
+    "scene_id": "scene_1",
+    "speaker": "Sam",
+    "text": "Look at that clean hook right on the landing page: 'Stop Guessing. Start Validating.' Idea Lint basically builds an adversarial courtroom for raw startup concepts.",
+    "audio_duration_ms": 10000,
+    "word_count": 25
+  },
+  {
+    "turn_index": 1,
+    "scene_id": "scene_1",
+    "speaker": "Alex",
+    "text": "Right, and check out the BYOK modal popping up\u2014it keeps API key ownership fully client-side before we jump into the Command Center.",
+    "audio_duration_ms": 8800,
+    "word_count": 22
+  },
+  {
+    "turn_index": 2,
+    "scene_id": "scene_1",
+    "speaker": "Sam",
+    "text": "And we're testing it with a real pitch: 'Song Blueprint Analyser.' Let's see how the multi-agent engine breaks it down.",
+    "audio_duration_ms": 8000,
+    "word_count": 20
+  },
+  {
+    "turn_index": 3,
+    "scene_id": "scene_2",
+    "speaker": "Alex",
+    "text": "There it goes\u2014Session Run ID 70711cal is live. The orchestrator initializes the agent loop, starting with Gemini 2.5 Flash handling the Researcher role.",
+    "audio_duration_ms": 9200,
+    "word_count": 23
+  },
+  {
+    "turn_index": 4,
+    "scene_id": "scene_2",
+    "speaker": "Sam",
+    "text": "Notice that status badge flipped straight to RUNNING. The Researcher is actively querying Google Search grounding to benchmark audio intelligence tools.",
+    "audio_duration_ms": 8400,
+    "word_count": 21
+  },
+  {
+    "turn_index": 5,
+    "scene_id": "scene_3",
+    "speaker": "Sam",
+    "text": "Let's check the backend plumbing\u2014switching right over to Google Cloud Logs Explorer.",
+    "audio_duration_ms": 4800,
+    "word_count": 12
+  },
+  {
+    "turn_index": 6,
+    "scene_id": "scene_3",
+    "speaker": "Alex",
+    "text": "Look at VentureBot on Cloud Run. It's handling the agent chain over Server-Sent Events, streaming raw token payloads directly to the client.",
+    "audio_duration_ms": 8800,
+    "word_count": 22
+  },
+  {
+    "turn_index": 7,
+    "scene_id": "scene_3",
+    "speaker": "Sam",
+    "text": "Zero blocking overhead on the event loop\u2014it just streams state changes in real time.",
+    "audio_duration_ms": 5600,
+    "word_count": 14
+  },
+  {
+    "turn_index": 8,
+    "scene_id": "scene_4",
+    "speaker": "Alex",
+    "text": "Back in the UI, the Advocate agent just completed a full system architecture diagram alongside identified feature gaps.",
+    "audio_duration_ms": 7200,
+    "word_count": 18
+  },
+  {
+    "turn_index": 9,
+    "scene_id": "scene_4",
+    "speaker": "Sam",
+    "text": "And right below, the Creative agent jumps in with lateral pivot angles so the founder doesn't build another generic music analysis clone.",
+    "audio_duration_ms": 8800,
+    "word_count": 22
+  },
+  {
+    "turn_index": 10,
+    "scene_id": "scene_5",
+    "speaker": "Sam",
+    "text": "Check out that competitive landscape\u2014Moises.ai, Cyanite, Tunebat. It immediately pulled actual market competitors.",
+    "audio_duration_ms": 5200,
+    "word_count": 13
+  },
+  {
+    "turn_index": 11,
+    "scene_id": "scene_5",
+    "speaker": "Alex",
+    "text": "And the Judge delivers the verdict: 5.33 overall with Novelty and Feasibility at 5/10. The recommendation is to PARK the idea.",
+    "audio_duration_ms": 8400,
+    "word_count": 21
+  },
+  {
+    "turn_index": 12,
+    "scene_id": "scene_6",
+    "speaker": "Sam",
+    "text": "Entire debate wrapped in under two minutes! But notice it didn't just rush into generating code\u2014it hit a Human-in-the-Loop decision gate.",
+    "audio_duration_ms": 8400,
+    "word_count": 21
+  },
+  {
+    "turn_index": 13,
+    "scene_id": "scene_6",
+    "speaker": "Alex",
+    "text": "That's a deliberate design pattern. When an idea gets parked, the orchestrator halts so you don't burn tokens on low-conviction PRDs.",
+    "audio_duration_ms": 8400,
+    "word_count": 21
+  },
+  {
+    "turn_index": 14,
+    "scene_id": "scene_7",
+    "speaker": "Sam",
+    "text": "Now opening the Idea Detail Workspace\u2014everything is organized into tabs: Research Brief, Advocate, Critic, and the User Transcript.",
+    "audio_duration_ms": 7200,
+    "word_count": 18
+  },
+  {
+    "turn_index": 15,
+    "scene_id": "scene_7",
+    "speaker": "Alex",
+    "text": "Having full debate provenance is huge for technical founders. You can audit the exact friction points before approving the next run.",
+    "audio_duration_ms": 8400,
+    "word_count": 21
+  },
+  {
+    "turn_index": 16,
+    "scene_id": "scene_8",
+    "speaker": "Sam",
+    "text": "Selecting the preset '[Approve] Generate PRD with mitigations' and submitting custom feedback kicks off RUN number two!",
+    "audio_duration_ms": 6800,
+    "word_count": 17
+  },
+  {
+    "turn_index": 17,
+    "scene_id": "scene_8",
+    "speaker": "Alex",
+    "text": "Now the PRD Writer and Security Auditor take over, synthesizing non-functional requirements and auditing edge cases against the debate findings.",
+    "audio_duration_ms": 8000,
+    "word_count": 20
+  },
+  {
+    "turn_index": 18,
+    "scene_id": "scene_9",
+    "speaker": "Sam",
+    "text": "Look at the final output on 'The Doomsday Clock'\u2014hitting 'Print / Save as PDF' renders an audit-proof PRD complete with Mermaid sequence diagrams.",
+    "audio_duration_ms": 9200,
+    "word_count": 23
+  },
+  {
+    "turn_index": 19,
+    "scene_id": "scene_9",
+    "speaker": "Alex",
+    "text": "From a raw, unverified prompt to an actionable engineering spec with complete security verification. That's the power of adversarial agent architectures.",
+    "audio_duration_ms": 8400,
+    "word_count": 21
+  }
+]

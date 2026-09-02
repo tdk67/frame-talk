@@ -1,0 +1,97 @@
+[
+  {
+    "scene_id": "scene_1",
+    "speaker": "Mark",
+    "text": "Alright Sarah, check this out. Idea Lint—they call it an adversarial courtroom for validating startup concepts."
+  },
+  {
+    "scene_id": "scene_1",
+    "speaker": "Sarah",
+    "text": "Love that tagline: 'Stop Guessing. Start Validating.' And look at that BYOK modal—everything runs strictly client-side with zero cloud database."
+  },
+  {
+    "scene_id": "scene_1",
+    "speaker": "Mark",
+    "text": "Exactly. He just punched in 'Song Blueprint Analyser' and kicked off the run."
+  },
+  {
+    "scene_id": "scene_2",
+    "speaker": "Sarah",
+    "text": "And boom, Live Debate Stream launches! You can see all seven agent tabs firing up—Advocate, Critic, Creative, Judge."
+  },
+  {
+    "scene_id": "scene_2",
+    "speaker": "Mark",
+    "text": "Status badge flips to RUNNING, session ID 70711cal. Notice the Researcher agent spinning up first on Gemini 2.5 Flash."
+  },
+  {
+    "scene_id": "scene_3",
+    "speaker": "Sarah",
+    "text": "Wait, he just hopped into Google Cloud Logs Explorer. Look at that streaming SSE feed."
+  },
+  {
+    "scene_id": "scene_3",
+    "speaker": "Mark",
+    "text": "VentureBot on Cloud Run streaming out Server-Sent Events in real-time. Clean architectural observability."
+  },
+  {
+    "scene_id": "scene_4",
+    "speaker": "Sarah",
+    "text": "Back to the dashboard! The Advocate just rendered a full text-based system architecture diagram right in the markdown output."
+  },
+  {
+    "scene_id": "scene_4",
+    "speaker": "Mark",
+    "text": "While the Creative agent is already pulling up lateral pivot strategies and niche market wedges."
+  },
+  {
+    "scene_id": "scene_5",
+    "speaker": "Sarah",
+    "text": "The Judge's scorecard is brutal! It cited real competitors—Moises.ai, Cyanite, Tunebat."
+  },
+  {
+    "scene_id": "scene_5",
+    "speaker": "Mark",
+    "text": "Five on novelty, five on feasibility, six on market fit. Weighted overall score 5.33 with a PARK recommendation."
+  },
+  {
+    "scene_id": "scene_6",
+    "speaker": "Sarah",
+    "text": "Notice how it stopped? That's the Human-in-the-Loop decision gate. It won't build specs without human signoff."
+  },
+  {
+    "scene_id": "scene_6",
+    "speaker": "Mark",
+    "text": "A hard gate right when debate completes, prompting to review trade-offs before generating the PRD."
+  },
+  {
+    "scene_id": "scene_7",
+    "speaker": "Sarah",
+    "text": "Now inside the Idea Detail Workspace—you get tabs for the Research Brief, Advocate, Critic, and full User Transcript."
+  },
+  {
+    "scene_id": "scene_7",
+    "speaker": "Mark",
+    "text": "All persisted in local browser storage so the founder never leaks confidential pitch data to an external database."
+  },
+  {
+    "scene_id": "scene_8",
+    "speaker": "Sarah",
+    "text": "He just clicked '[Approve] Generate PRD with mitigations' and triggered Run Number Two."
+  },
+  {
+    "scene_id": "scene_8",
+    "speaker": "Mark",
+    "text": "PRD Writer and Security Auditor take the floor, generating machine-actionable specifications and architectural guardrails."
+  },
+  {
+    "scene_id": "scene_9",
+    "speaker": "Sarah",
+    "text": "And the grand finale—switching over to 'The Doomsday Clock' and hitting Print to PDF."
+  },
+  {
+    "scene_id": "scene_9",
+    "speaker": "Mark",
+    "text": "Complete with mermaid sequence diagrams, acceptance criteria, and exportable documentation ready for engineers."
+  }
+]

@@ -1,0 +1,154 @@
+/* ==========================================================================
+   Chronos Sync Engine & Observability Extensions for Frame Talk
+   Harmonized with the Bricolage Grotesque, Navy & Cream Design System
+   ========================================================================== */
+
+/* Chronos Dynamic Visual Hold Overlay on Canvas / Video */
+.freeze-indicator-badge {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: #D32F2F;
+    color: #FFFFFF;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(211, 47, 47, 0.45);
+    display: none;
+    align-items: center;
+    gap: 0.45rem;
+    z-index: 15;
+    animation: pulseFreeze 1.5s infinite alternate ease-in-out;
+}
+
+.freeze-indicator-badge.visible {
+    display: inline-flex;
+}
+
+@keyframes pulseFreeze {
+    0% { transform: scale(1); opacity: 0.95; }
+    100% { transform: scale(1.05); opacity: 1; }
+}
+
+/* Chronos Schedule Summary Cards in Step 5 */
+.chronos-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.chronos-stat-card {
+    background: #FFFFFF;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chronos-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.chronos-stat-value {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--color-navy);
+}
+
+.chronos-stat-value.freeze-val {
+    color: #D32F2F;
+}
+
+.chronos-stat-value.sync-val {
+    color: #2E7D32;
+}
+
+/* ClickHouse Live Telemetry Stream */
+.clickhouse-stream-card {
+    background: #FFFFFF;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.telemetry-pill-stream {
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.telemetry-pill {
+    background: var(--color-cream);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+/* Script Line Cards */
+.script-line-item {
+    background: #FFFFFF;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 4px 12px rgba(12, 42, 74, 0.03);
+    transition: var(--transition-smooth);
+}
+
+.script-line-item:hover {
+    border-color: var(--color-blue);
+    box-shadow: var(--shadow-soft);
+}
+
+.script-line-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.speaker-tag {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.speaker-tag.mark {
+    color: var(--color-blue);
+}
+
+.speaker-tag.sarah {
+    color: #C2185B;
+}
+
+.scene-anchor-pill {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    background: var(--color-sky-soft);
+    color: var(--color-navy);
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+}
