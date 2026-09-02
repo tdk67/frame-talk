@@ -11,7 +11,7 @@ class TelemetryRepository:
 
     @property
     def is_connected(self) -> bool:
-        return self._logger.is_connected
+        return self._logger.check_connection()
 
     @property
     def host_info(self) -> str:

@@ -4,9 +4,10 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.3
     container_name: castops-clickhouse
+    mem_limit: 1500m
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
     environment:
       CLICKHOUSE_DB: castops
       CLICKHOUSE_USER: default
@@ -22,6 +23,7 @@ services:
   grafana:
     image: grafana/grafana-oss:10.4.0
     container_name: castops-grafana
+    mem_limit: 512m
     ports:
       - "3004:3000"
     environment:
@@ -29,6 +31,9 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=castops
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org.
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - grafana_data:/var/lib/grafana

@@ -41,6 +41,17 @@ async function checkBackendHealth() {
         keyBadge.style.borderColor = 'rgba(74, 222, 128, 0.4)';
         keyText.textContent = 'API Key Configured';
     }
+
+    // Dynamically route Grafana dashboard link
+    const grafanaLink = document.getElementById('grafana-dashboard-link');
+    if (grafanaLink) {
+        const host = window.location.hostname;
+        if (host.includes('taskmind-ai.com')) {
+            grafanaLink.href = 'https://grafana.taskmind-ai.com';
+        } else if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+            grafanaLink.href = `http://${host}:3004`;
+        }
+    }
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────

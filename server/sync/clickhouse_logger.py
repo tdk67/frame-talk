@@ -26,7 +26,18 @@ class ClickHouseLogger:
         self.database = database
         self.client = None
         self.is_connected = False
+        self._last_connect_attempt = 0.0
         self._init_connection()
+
+    def check_connection(self) -> bool:
+        """Dynamically attempts reconnection if not currently connected."""
+        if self.is_connected and self.client:
+            return True
+        now = time.time()
+        if now - self._last_connect_attempt > 10.0:
+            self._last_connect_attempt = now
+            self._init_connection()
+        return self.is_connected
 
     def _init_connection(self):
         import socket
@@ -116,7 +127,7 @@ class ClickHouseLogger:
             _in_memory_events.pop(0)
 
         # Write to ClickHouse if connected
-        if self.is_connected and self.client:
+        if self.check_connection() and self.client:
             try:
                 row = [
                     now,
@@ -151,7 +162,7 @@ class ClickHouseLogger:
         """
         Retrieves recent sync events for display in the Observability Studio.
         """
-        if self.is_connected and self.client:
+        if self.check_connection() and self.client:
             try:
                 query = f"SELECT * FROM {self.database}.sync_events"
                 if session_id:
