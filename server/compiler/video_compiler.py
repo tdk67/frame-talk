@@ -57,7 +57,7 @@ class VideoCompiler:
             output_path
         ]
         logger.info(f"Running simple remux: {' '.join(cmd)}")
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=180)
         if result.returncode != 0:
             raise RuntimeError(f"FFmpeg failed ({result.returncode}): {result.stderr[:300]}")
 
@@ -79,6 +79,7 @@ class VideoCompiler:
         """
         Builds a multi-segment timeline using FFmpeg concat with freeze holds.
         """
+        import shutil
         temp_dir = tempfile.mkdtemp(prefix="castops_compile_")
         segment_files = []
 
@@ -99,7 +100,7 @@ class VideoCompiler:
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
                     "-an", base_clip
                 ]
-                subprocess.run(cmd_cut, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                subprocess.run(cmd_cut, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=120)
                 segment_files.append(base_clip)
 
                 # 2. If freeze required, extract last frame and generate freeze video
@@ -117,7 +118,7 @@ class VideoCompiler:
                         "-q:v", "2",
                         frame_img
                     ]
-                    subprocess.run(cmd_frame, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    subprocess.run(cmd_frame, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
 
                     if os.path.exists(frame_img):
                         # Generate video from freeze frame
@@ -129,7 +130,7 @@ class VideoCompiler:
                             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
                             freeze_clip
                         ]
-                        subprocess.run(cmd_freeze, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                        subprocess.run(cmd_freeze, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=120)
                         segment_files.append(freeze_clip)
 
             # Write concat manifest
@@ -151,7 +152,7 @@ class VideoCompiler:
                 output_path
             ]
             logger.info(f"Stitching {len(segment_files)} segments with master audio...")
-            subprocess.run(cmd_concat, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            subprocess.run(cmd_concat, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=300)
 
             return {
                 "success": True,
@@ -162,12 +163,6 @@ class VideoCompiler:
                 "total_segments_stitched": len(segment_files)
             }
         finally:
-            # Cleanup temp files
-            try:
-                for f in os.listdir(temp_dir):
-                    os.remove(os.path.join(temp_dir, f))
-                os.rmdir(temp_dir)
-            except Exception:
-                pass
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 video_compiler = VideoCompiler()

@@ -165,10 +165,12 @@ class ClickHouseLogger:
         if self.check_connection() and self.client:
             try:
                 query = f"SELECT * FROM {self.database}.sync_events"
+                params = {}
                 if session_id:
-                    query += f" WHERE session_id = '{session_id}'"
-                query += f" ORDER BY event_time DESC LIMIT {limit}"
-                result = self.client.query(query)
+                    query += " WHERE session_id = %(session_id)s"
+                    params["session_id"] = str(session_id).strip()
+                query += f" ORDER BY event_time DESC LIMIT {max(1, min(int(limit), 500))}"
+                result = self.client.query(query, parameters=params)
                 columns = result.column_names
                 events = []
                 for row in result.result_rows:

@@ -35,7 +35,7 @@ def setup_error_handlers(app: FastAPI) -> None:
                 "error": True,
                 "status_code": 500,
                 "error_type": "InternalServerError",
-                "message": str(exc),
-                "detail": "An unexpected server error occurred. Check the server logs for the full traceback."
+                "message": "An unexpected server error occurred while processing your request.",
+                "detail": "Please refer to the application logs for diagnostic information."
             }
         )

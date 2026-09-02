@@ -54,6 +54,11 @@ class StudioService:
 
         video_path = file_repository.get_upload_path(video_filename)
 
+        from server.core.guardrails import validate_video_file
+        valid, err_msg = validate_video_file(video_path, max_size_bytes=int(config.max_video_size_mb * 1024 * 1024))
+        if not valid:
+            raise InvalidInputException(f"Invalid video payload: {err_msg}")
+
         return execute_with_retry(
             action_name="Analyze Video Screen (Gemini 3.7 Flash)",
             fn=ingestion_agent.analyze_screencast,

@@ -11,7 +11,17 @@ class JobRepository:
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_path(self, job_id: str):
-        return self.jobs_dir / f"{job_id}.json"
+        import re
+        from server.core.exceptions import InvalidInputException
+        cleaned = job_id.strip()
+        if ".." in cleaned or "/" in cleaned or "\\" in cleaned:
+            raise InvalidInputException(f"Path traversal characters detected in job_id '{job_id}'.")
+        if not re.match(r"^[a-zA-Z0-9_\-]+$", cleaned):
+            raise InvalidInputException("Invalid job ID characters.")
+        resolved = (self.jobs_dir / f"{cleaned}.json").resolve()
+        if not resolved.is_relative_to(self.jobs_dir.resolve()):
+            raise InvalidInputException("Job ID path traversal detected.")
+        return resolved
 
     def create_job(self, job_id: Optional[str] = None) -> str:
         if not job_id:

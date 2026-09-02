@@ -36,6 +36,10 @@ class IngestionAgent:
         if not active_key:
             raise ValueError("No Gemini API key provided. Please configure your API key in Frame Talk.")
 
+        from server.core.guardrails import sanitize_and_inspect_text, wrap_with_isolation_boundary
+        sanitized_readme = sanitize_and_inspect_text(readme_text, max_chars=40000, context_name="README.md")
+        isolated_readme = wrap_with_isolation_boundary(sanitized_readme, "untrusted_documentation")
+
         # Prompt for Gemini Multimodal Timelined Breakdown (Matching Gold Standard PDF)
         prompt = f"""Analyse the uploaded video and project documentation.
 Generate a timelined breakdown of the video in approximately 20-30 second intervals (or natural UI transition boundaries) detailing:
@@ -44,9 +48,7 @@ Generate a timelined breakdown of the video in approximately 20-30 second interv
 3. How the application is reacting (navigation changes, modal popups, status badges changing, streaming markdown, rendering data tables or scorecards)
 
 DOCUMENTATION CONTEXT:
-\"\"\"
-{readme_text}
-\"\"\"
+{isolated_readme}
 
 TOTAL VIDEO DURATION: {video_duration_seconds:.2f} seconds ({self._format_time(video_duration_seconds)})
 

@@ -36,6 +36,10 @@ class ScriptwriterAgent:
             s_copy["video_duration_sec"] = max(1.0, (s.get("end_time_ms", 0) - s.get("start_time_ms", 0)) / 1000.0)
             enhanced_scenes.append(s_copy)
 
+        from server.core.guardrails import sanitize_and_inspect_text, wrap_with_isolation_boundary
+        sanitized_readme = sanitize_and_inspect_text(readme_text[:4000], max_chars=4000, context_name="README.md")
+        isolated_readme = wrap_with_isolation_boundary(sanitized_readme, "untrusted_documentation")
+
         prompt = f"""You are an elite technical podcast scriptwriter and director.
 Create a lively, organic, two-character live technical walkthrough conversation between two hosts:
 - **Alex (Lead Systems Architect)**: Highly knowledgeable, direct, conversational, points out technical implementation details, architecture, and performance.
@@ -54,9 +58,7 @@ INPUT SCENES:
 \"\"\"
 
 README CONTEXT:
-\"\"\"
-{readme_text[:2000]}
-\"\"\"
+{isolated_readme}
 
 OUTPUT SCHEMA:
 Output ONLY a raw JSON object with a "dialogue" array:
