@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Node / Web
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Credentials
+.env
+.env.local
+*.key
+credentials.json
+
+# Media & Temporary Artifacts
+uploads/
+output/
+temp/
+*.tmp
+*.mp4
+*.webm
+*.wav
+*.pcm
+!sample_assets/*.mp4
+!sample_assets/*.md
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
