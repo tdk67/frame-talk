@@ -23,7 +23,7 @@ services:
     image: grafana/grafana-oss:10.4.0
     container_name: castops-grafana
     ports:
-      - "3000:3000"
+      - "3004:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=castops
