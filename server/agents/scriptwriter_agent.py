@@ -29,6 +29,13 @@ class ScriptwriterAgent:
         """
         active_key = api_key or self.api_key
 
+        # Inject video duration into scenes for LLM context
+        enhanced_scenes = []
+        for s in scenes:
+            s_copy = dict(s)
+            s_copy["video_duration_sec"] = max(1.0, (s.get("end_time_ms", 0) - s.get("start_time_ms", 0)) / 1000.0)
+            enhanced_scenes.append(s_copy)
+
         prompt = f"""You are an elite technical podcast scriptwriter and director.
 Create a lively, organic, two-character live technical walkthrough conversation between two hosts:
 - **Alex (Lead Systems Architect)**: Highly knowledgeable, direct, conversational, points out technical implementation details, architecture, and performance.
@@ -38,11 +45,12 @@ STYLE GUIDELINES (MAKE IT FEEL LIKE A REAL LIVE CONVERSATION):
 1. **Natural Dialogue Dynamics**: Hosts should react to each other, use conversational hooks ("Right!", "Check that out—", "Wait, does that mean...", "Exactly, notice how..."), finish thoughts collaboratively, and sound like colleagues having coffee.
 2. **NO Synthetic Timestamps**: NEVER mention explicit timestamps or times (DO NOT SAY "at 0:14" or "in this minute"). Reference screen actions naturally ("Now as the pipeline spins up...", "Look at that latency metric...").
 3. **Strict Scene Binding**: You are provided a structured list of visual scenes. You MUST assign each dialogue line to its corresponding `scene_id`.
-4. Provide 2 to 4 rapid, punchy dialogue lines per scene so the conversation moves briskly with the video.
+4. **Mathematical Pacing (CRITICAL)**: Speech duration is approx 2.5 words per second (150 WPM). You MUST match the total word count of the dialogue for each scene to its `video_duration_sec`. For example, a 10.0s scene needs exactly ~25 words total. A 3.0s scene needs ~7 words.
+5. **QA Auditor Feedback**: If "QA AUDITOR FEEDBACK TO FIX" is present in the README CONTEXT below, you MUST prioritize it. If it says a scene is too short, expand the dialogue word count for that scene. If it says a scene is too long, reduce the word count for that scene.
 
 INPUT SCENES:
 \"\"\"
-{json.dumps(scenes, indent=2)}
+{json.dumps(enhanced_scenes, indent=2)}
 \"\"\"
 
 README CONTEXT:

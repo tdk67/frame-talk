@@ -15,17 +15,21 @@ class FileRepository:
         self.uploads_dir = config.uploads_dir
         self.output_dir = config.output_dir
 
-    async def save_uploaded_video(self, upload_file, original_filename: str) -> Tuple[str, str]:
-        """Saves an UploadFile to uploads/ in 1MB chunks."""
+    async def save_uploaded_video(self, upload_file, original_filename: str) -> Tuple[str, str, str]:
+        """Saves an UploadFile to uploads/ in 1MB chunks and returns (filename, filepath, hash)."""
+        import hashlib
         ext = os.path.splitext(original_filename)[1] or ".mp4"
         filename = f"screencast_{uuid.uuid4().hex[:8]}{ext}"
         filepath = self.uploads_dir / filename
+        
+        hasher = hashlib.sha256()
 
         async with aiofiles.open(filepath, "wb") as f:
             while chunk := await upload_file.read(1024 * 1024):
                 await f.write(chunk)
+                hasher.update(chunk)
 
-        return filename, str(filepath)
+        return filename, str(filepath), hasher.hexdigest()
 
     async def save_uploaded_readme(self, content_bytes: bytes, original_filename: str) -> Tuple[str, str, str]:
         """Saves a uploaded README markdown file to uploads/."""

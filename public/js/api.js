@@ -38,18 +38,38 @@ export const api = {
         return await res.json();
     },
 
-    async analyzeVideo(videoFilename, readmeText, videoDurationSeconds, apiKey) {
+    async analyzeVideo(videoFilename, readmeText, videoDurationSeconds, apiKey, videoHash, onProgress) {
+        // Step 1: Submit job
         const res = await fetch(`${API_BASE}/api/analyze-video`, {
             method: 'POST',
             headers: getHeaders(apiKey),
             body: JSON.stringify({
                 video_filename: videoFilename,
                 readme_text: readmeText,
-                video_duration_seconds: videoDurationSeconds
+                video_duration_seconds: videoDurationSeconds,
+                video_hash: videoHash
             })
         });
-        if (!res.ok) throw new Error(`Analysis failed: ${await res.text()}`);
-        return await res.json();
+        if (!res.ok) throw new Error(`Analysis submission failed: ${await res.text()}`);
+        const { job_id } = await res.json();
+        
+        if (onProgress) onProgress(job_id);
+
+        // Step 2: Poll for completion
+        while (true) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Poll every 2 seconds
+            
+            const pollRes = await fetch(`${API_BASE}/api/jobs/${job_id}`);
+            if (!pollRes.ok) throw new Error(`Polling failed: ${await pollRes.text()}`);
+            
+            const job = await pollRes.json();
+            if (job.status === 'COMPLETED') {
+                return job.result;
+            } else if (job.status === 'FAILED') {
+                throw new Error(`Analysis job failed: ${job.error}`);
+            }
+            // If PENDING or PROCESSING, continue loop
+        }
     },
 
     async generateScript(scenes, readmeText, apiKey) {

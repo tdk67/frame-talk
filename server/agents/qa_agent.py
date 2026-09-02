@@ -27,23 +27,50 @@ class QaAgent:
         Audits the dialogue against scenes and documentation.
         Returns accuracy scores, checklist, and actionable improvement feedback.
         """
-        # Static heuristic audits first
+        # Scene-by-scene analysis
+        scene_durations = {}
+        for s in scenes:
+            s_id = s.get("scene_id")
+            s_vid_sec = (s.get("end_time_ms", 0) - s.get("start_time_ms", 0)) / 1000.0
+            scene_durations[s_id] = {"video_sec": s_vid_sec, "words": 0}
+
         has_timestamps = False
         timestamp_patterns = [r'\b\d{1,2}:\d{2}\b', r'at\s+\d+\s+seconds', r'at\s+\d+\s+minute']
         total_words = 0
+
         for turn in dialogue:
             text = turn.get("text", "")
-            total_words += len(text.split())
+            turn_words = len(text.split())
+            total_words += turn_words
+            s_id = turn.get("scene_id")
+            if s_id in scene_durations:
+                scene_durations[s_id]["words"] += turn_words
+
             for pat in timestamp_patterns:
                 if re.search(pat, text, re.IGNORECASE):
                     has_timestamps = True
                     break
         
-        # Estimate spoken duration (150 words / min = 2.5 words / sec)
+        # Estimate spoken duration and build scene feedback
+        scene_pacing_feedback = []
+        has_major_pacing_issue = False
+        
+        for s_id, stats in scene_durations.items():
+            speech_sec = stats["words"] / 2.5
+            vid_sec = max(1.0, stats["video_sec"])
+            ratio = speech_sec / vid_sec
+            
+            if ratio < 0.70:
+                has_major_pacing_issue = True
+                scene_pacing_feedback.append(f"[{s_id}]: Speech ({speech_sec:.1f}s) is too short for video ({vid_sec:.1f}s). Introduce a gap or expand text.")
+            elif ratio > 1.15:
+                has_major_pacing_issue = True
+                scene_pacing_feedback.append(f"[{s_id}]: Speech ({speech_sec:.1f}s) is too long for video ({vid_sec:.1f}s). Reduce text to fit.")
+
+        scene_feedback_str = " ".join(scene_pacing_feedback)
+        
         estimated_speech_sec = total_words / 2.5
         total_video_sec = scenes[-1].get("end_time_ms", 0) / 1000.0 if scenes else 0
-        duration_ratio = estimated_speech_sec / max(1, total_video_sec)
-        is_too_short = duration_ratio < 0.65
 
         all_scenes_covered = len(set(t.get("scene_id") for t in dialogue)) >= len(scenes) * 0.85
         natural_lengths = all(len(t.get("text", "").split()) >= 4 for t in dialogue)
@@ -51,7 +78,7 @@ class QaAgent:
         active_key = api_key or self.api_key or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
         if active_key:
             try:
-                llm_eval = self._call_qa_llm(scenes, dialogue, readme_text, active_key, total_video_sec, estimated_speech_sec)
+                llm_eval = self._call_qa_llm(scenes, dialogue, readme_text, active_key, total_video_sec, estimated_speech_sec, scene_feedback_str)
                 if llm_eval:
                     return llm_eval
             except Exception as e:
@@ -60,11 +87,11 @@ class QaAgent:
         # Heuristic scorecard fallback
         accuracy_score = 95 if not has_timestamps else 75
         readme_score = 92 if len(dialogue) >= len(scenes) else 80
-        pacing_score = 94 if all_scenes_covered and not is_too_short else 55
+        pacing_score = 94 if all_scenes_covered and not has_major_pacing_issue else 55
 
         feedback_text = "Flawless visual alignment: Dialogue turns match scene boundaries with high fidelity."
-        if is_too_short:
-            feedback_text = f"Script is too short ({estimated_speech_sec:.1f}s) for the video ({total_video_sec:.1f}s). Expand explanations to prevent massive dead air."
+        if has_major_pacing_issue:
+            feedback_text = f"Pacing issues detected. {scene_feedback_str}"
         elif has_timestamps:
             feedback_text = "Note: explicit timestamp references detected; consider smoothing into natural transitions."
 
@@ -79,11 +106,11 @@ class QaAgent:
                 "explains_readme_concepts": True,
                 "no_robotic_timestamps": not has_timestamps,
                 "full_visual_coverage": all_scenes_covered,
-                "organic_dialogue_cadence": natural_lengths and not is_too_short
+                "organic_dialogue_cadence": natural_lengths and not has_major_pacing_issue
             }
         }
 
-    def _call_qa_llm(self, scenes: List[Dict[str, Any]], dialogue: List[Dict[str, Any]], readme: str, api_key: str, video_sec: float, speech_sec: float) -> Optional[Dict[str, Any]]:
+    def _call_qa_llm(self, scenes: List[Dict[str, Any]], dialogue: List[Dict[str, Any]], readme: str, api_key: str, video_sec: float, speech_sec: float, scene_feedback: str) -> Optional[Dict[str, Any]]:
         prompt = f"""You are a strict technical podcast QA auditor.
 Evaluate the dialogue script against the visual scenes and documentation.
 
@@ -91,7 +118,10 @@ IMPORTANT TEMPORAL CONTEXT:
 - Total Video Duration: {video_sec:.1f} seconds
 - Estimated Script Spoken Duration: {speech_sec:.1f} seconds (based on 150 words/minute)
 
-If the Estimated Script Spoken Duration is significantly shorter than the Total Video Duration (e.g. less than 65% of the video length), the script will have awkward dead air. You MUST penalize the pacing_score heavily (e.g. 50-60) and explicitly instruct the writer in the 'feedback' field to expand their explanations to cover the visual duration.
+SCENE-BY-SCENE PACING ANALYSIS:
+{scene_feedback if scene_feedback else "All scenes map perfectly to their time bounds."}
+
+If there are pacing issues listed above, you MUST penalize the pacing_score heavily (e.g., 50-60) and explicitly include the scene-by-scene instructions in the 'feedback' field (e.g. telling the writer exactly which scenes to expand, introduce a gap in, or reduce text for).
 
 SCENES:
 {json.dumps(scenes, indent=2)}
@@ -103,7 +133,7 @@ AUDIT CRITERIA:
 1. Video Accuracy (0-100): Are dialogue turns discussing the correct actions for their scene_id?
 2. Technical Depth (0-100): Are concepts explained accurately?
 3. No Robotic Timestamps: Does the text strictly avoid saying numbers like "at 0:15"?
-4. Conversational Pacing (0-100): Is it a snappy, natural conversation? AND does it cover the video duration properly?
+4. Conversational Pacing (0-100): Is it a snappy, natural conversation? AND does it cover the video duration properly per scene?
 
 OUTPUT JSON ONLY:
 {{
@@ -111,7 +141,7 @@ OUTPUT JSON ONLY:
   "accuracy_score": 95,
   "readme_score": 90,
   "pacing_score": 92,
-  "feedback": "Two-sentence summary of audit results.",
+  "feedback": "Two-sentence summary of audit results, including explicit scene-by-scene fixing instructions if pacing is off.",
   "checklist": {{
     "discusses_video_actions": true,
     "explains_readme_concepts": true,

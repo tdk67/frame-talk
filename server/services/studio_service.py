@@ -63,6 +63,37 @@ class StudioService:
             api_key=api_key
         )
 
+    async def run_video_analysis_job(
+        self,
+        job_id: str,
+        video_filename: str,
+        readme_text: str,
+        video_duration_seconds: float,
+        api_key: Optional[str] = None,
+        video_hash: Optional[str] = None
+    ):
+        """Background worker that runs analysis and updates job state."""
+        from server.repositories.job_repository import job_repository
+        job_repository.update_job(job_id, status="PROCESSING")
+        try:
+            scenes, eval_scorecard = self.analyze_video_screen(
+                video_filename=video_filename,
+                readme_text=readme_text,
+                video_duration_seconds=video_duration_seconds,
+                api_key=api_key
+            )
+            result = {
+                "scenes": scenes,
+                "eval_scorecard": eval_scorecard,
+                "total_scenes": len(scenes)
+            }
+            
+            job_repository.update_job(job_id, status="COMPLETED", result=result)
+        except Exception as e:
+            logger.error(f"Video analysis job {job_id} failed: {e}")
+            job_repository.update_job(job_id, status="FAILED", error=str(e))
+
+
     def generate_dialogue_script(
         self,
         scenes: List[Dict[str, Any]],

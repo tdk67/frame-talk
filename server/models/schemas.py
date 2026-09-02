@@ -23,6 +23,7 @@ class UploadResponse(BaseModel):
     video_filename: Optional[str] = None
     video_path: Optional[str] = None
     original_video_name: Optional[str] = None
+    video_hash: Optional[str] = None
     readme_filename: Optional[str] = None
     readme_text: Optional[str] = None
     original_readme_name: Optional[str] = None
@@ -31,6 +32,7 @@ class AnalyzeRequest(BaseModel):
     video_filename: str = Field(..., description="Filename of the uploaded video in uploads/")
     readme_text: str = Field(..., description="Full text content of project README.md")
     video_duration_seconds: float = Field(..., gt=0, description="Total video runtime in seconds")
+    video_hash: Optional[str] = Field(None, description="SHA-256 hash of the video for caching")
 
 class AnalyzeResponse(BaseModel):
     scenes: List[Dict[str, Any]]

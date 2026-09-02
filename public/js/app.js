@@ -213,7 +213,26 @@ function initControls() {
             const uploadRes = await api.uploadAssets(videoFile, readmeFile);
             updateStepProgress(2, 60);
 
-            const analyzeRes = await api.analyzeVideo(uploadRes.video_filename, readmeText, videoDurationSec, apiKey);
+            let timerInterval;
+            let secondsElapsed = 0;
+
+            const analyzeRes = await api.analyzeVideo(
+                uploadRes.video_filename, 
+                readmeText, 
+                videoDurationSec, 
+                apiKey,
+                uploadRes.video_hash,
+                (jobId) => {
+                    timerInterval = setInterval(() => {
+                        secondsElapsed++;
+                        setStepLoading(2, true, `Running background video analysis... (${secondsElapsed}s)`);
+                    }, 1000);
+                    setStepLoading(2, true, `Running background video analysis... (0s)`);
+                    updateStepProgress(2, 75);
+                }
+            );
+            
+            if (timerInterval) clearInterval(timerInterval);
             updateStepProgress(2, 100);
 
             store.setState({
