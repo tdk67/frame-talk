@@ -245,5 +245,25 @@ export const api = {
         const res = await fetch(url, { headers: await getHeaders() });
         if (!res.ok) return { events: [], metrics: {} };
         return await res.json();
+    },
+
+    async getQuota(apiKey) {
+        try {
+            const res = await fetch(`${API_BASE}/api/quota`, { headers: await getHeaders(apiKey) });
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
+    },
+
+    async getAgentBuilderSpec() {
+        try {
+            const res = await fetch(`${API_BASE}/api/agent-builder/spec`);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
     }
 };

@@ -56,7 +56,23 @@ async def analyze_video(
         response.status_code = 200
         return {"job_id": job_id, "status": job["status"]}
 
+    # Enforce hosted key quota check (max 3 videos per user if on server key)
+    from server.services.quota_service import quota_service
+    has_custom_key = bool(api_key and api_key.strip())
+    allowed, err_msg, quota_info = quota_service.check_quota(user_hash=user_hash, has_custom_key=has_custom_key)
+    if not allowed:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "QUOTA_EXHAUSTED",
+                "message": err_msg,
+                "quota": quota_info
+            }
+        )
+
     job_repository.create_job(job_id=job_id, user_hash=user_hash)
+    quota_service.record_usage(user_hash=user_hash, has_custom_key=has_custom_key)
     
     # Log user activity event
     telemetry_repository.log_user_activity(

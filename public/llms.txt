@@ -1,0 +1,42 @@
+# Frame Talk
+
+> Autonomous multimodal screen-to-podcast production engine. Turn silent developer screencasts into engaging, perfectly synchronized two-host podcast walkthrough videos using Gemini 3.7 Flash and Chronos timeline stretching.
+
+Frame Talk pairs **Gemini 3.7 Flash** multimodal video vision with the **Chronos Dynamic Freeze-Hold Engine**. Unlike text-only podcast synthesizers that are blind to UI actions, Frame Talk anchors spoken dialogue directly to video pixels, holding and freezing frames when discussions go deep to guarantee 100% video-audio lockstep.
+
+## AI Agent Capabilities & Workflow
+
+Autonomous AI agents can invoke Frame Talk entirely from the backend REST API via a 6-stage pipeline:
+
+1. **Asset Ingestion & Probe**: Upload video (.mp4/.webm) and documentation (README.md). Check optimistic cache for instant replay.
+2. **Multimodal Visual Scene Analysis**: Dispatches `IngestionAgent` with Gemini 3.7 Flash to segment video into timestamped UI action scenes with vision-grounding verification scorecards.
+3. **Dialogue Scriptwriting & QA Pacing**: Dispatches `ScriptwriterAgent` to craft natural conversation between two hosts (Mark & Sarah) anchored to UI scenes, audited by `QAAgent`.
+4. **Speech Synthesis & Chronos Alignment**: Calls `AudioSynthEngine` (Gemini 3.1 Flash TTS Preview) generating 24kHz PCM audio. The `ChronosEngine` meters speech duration against visual scene duration and inserts frame-holds (`+300ms` buffer) whenever speech exceeds video length.
+5. **Video Compilation**: Dispatches `CompilerAgent` to render a 1080p MP4 with baked-in frame freezes and dual-channel audio muxing via FFmpeg.
+6. **Observability & Telemetry**: ClickHouse time-series event tracking, token count and dollar cost metering, and Grafana dashboard analytics.
+
+## Key Links & API Resources for AI Agents
+
+- [Full Backend API & Agent Instructions](https://frame-talk.taskmind-ai.com/llms-full.txt): Exhaustive guide for backend agents with cURL, JSON payloads, Python SDK examples, and execution flow.
+- [OpenAPI Specification](https://frame-talk.taskmind-ai.com/openapi.json): Standard OpenAPI v3 schema for programmatic client generation and tool calling.
+- [Interactive API Docs (Swagger)](https://frame-talk.taskmind-ai.com/docs): Interactive Swagger UI for testing endpoints.
+- [Interactive API Docs (ReDoc)](https://frame-talk.taskmind-ai.com/redoc): ReDoc documentation interface.
+- [ClickHouse CastOps Metrics](https://frame-talk.taskmind-ai.com/api/clickhouse/llm-metrics): LLM call volume, token consumption, and cost breakdown per model.
+- [User Statistics Aggregation](https://frame-talk.taskmind-ai.com/api/clickhouse/user-statistics): Multi-user funnel conversion and action distribution statistics.
+
+## Core Architecture & Engine Models
+
+- **Vision Ingestion**: `gemini-3.7-flash` (multimodal native token processing)
+- **Dialogue Scriptwriting**: `gemini-3.7-flash` (conversational anchoring)
+- **QA Script Audit**: `gemini-3.7-flash` (adherence, naturalness, coverage)
+- **Speech Synthesis**: `gemini-3.1-flash-tts-preview` (24kHz Mono Linear PCM, Puck & Kore voices)
+- **Timeline Engine**: `ChronosEngine` (dynamic hold calculation: `required_freeze_ms = speech_ms - scene_ms + 300`)
+- **Video Assembly**: `FFmpeg` (frame-accurate hold baking and PCM audio muxing)
+- **Telemetry Store**: `ClickHouse` (asynchronous non-blocking event streaming)
+- **Security & Privacy**: Zero PII storage, salted SHA-256 pseudonymization (`X-FrameTalk-User-Hash`), prompt injection guardrails.
+
+## Optional & Developer Resources
+
+- [Web Application UI](https://frame-talk.taskmind-ai.com/): Interactive web dashboard.
+- [Legal Notice (Impressum)](https://frame-talk.taskmind-ai.com/impressum.html): Regulatory provider identification.
+- [Privacy Policy (Datenschutz)](https://frame-talk.taskmind-ai.com/datenschutz.html): GDPR compliant data handling details.

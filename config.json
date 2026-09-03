@@ -1,6 +1,8 @@
 {
   "app_name": "Frame Talk",
-  "domain": "frame-talk.com",
+  "domain": "taskmind-ai.com",
+  "app_subdomain": "frame-talk",
+  "grafana_subdomain": "grafana",
   "version": "1.0.0",
   "models": {
     "vision_model": "gemini-3.7-flash",
@@ -24,8 +26,16 @@
   },
   "timeouts": {
     "gemini_api_sec": 120,
-    "file_processing_wait_max_sec": 180,
-    "openrouter_api_sec": 60
+    "file_processing_wait_max_sec": 180
+  },
+  "vertex_ai": {
+    "enabled": false,
+    "project": "agentic-cinema-frametalk",
+    "location": "us-central1"
+  },
+  "quota": {
+    "max_hosted_videos_per_user": 3,
+    "max_hosted_cost_per_user_usd": 1.00
   },
   "storage": {
     "uploads_dir": "uploads",

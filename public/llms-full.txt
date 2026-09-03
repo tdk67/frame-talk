@@ -1,0 +1,471 @@
+# Frame Talk: Autonomous AI Agent Backend Integration & Workflow Manual
+> Complete Machine-Readable Architectural Guide & Programmatic Execution Manual for Autonomous Backend Agents.
+
+## 1. System Overview & Agent Personas
+
+Frame Talk is a multimodal AI studio engine that transforms silent screen recordings of software applications into synchronized, two-host conversational video podcasts.
+
+The system is organized into specialized autonomous agents:
+- **`IngestionAgent`**: Analyzes raw video pixels using `gemini-3.7-flash` native multimodal understanding, dividing the timeline into structured visual action scenes mapped to project documentation.
+- **`ScriptwriterAgent`**: Generates natural, snappy two-host podcast dialogue between **Mark** (Lead Systems Architect, technical host) and **Sarah** (Dev Advocate & UX Specialist, engaging host) anchored directly to UI events.
+- **`QAAgent`**: Evaluates draft scripts for visual accuracy, README feature coverage, natural cadence, and timestamp freedom.
+- **`AudioSynthEngine`**: Synthesizes 24 kHz Mono Linear PCM speech using `gemini-3.1-flash-tts-preview` with custom host voices (`Puck` and `Kore`).
+- **`ChronosEngine`**: Computes timeline synchronization. When dialogue duration exceeds video scene duration, Chronos calculates dynamic video hold frames (`required_freeze_ms = speech_duration_ms - scene_duration_ms + 300ms buffer`), guaranteeing video-audio lockstep without desynchronization.
+- **`CompilerAgent`**: Orchestrates FFmpeg to bake frame holds into raw video frames and mux high-fidelity audio into a production-ready 1080p MP4.
+- **`TelemetryEngine`**: Asynchronously records prompt tokens, completion tokens, latency, dollar cost, and user funnel events into ClickHouse.
+
+---
+
+## 2. Authentication & Multi-User Request Headers
+
+Backend AI agents interacting with Frame Talk should supply two HTTP headers with every request:
+
+1. **`X-FrameTalk-User-Id` (Recommended)**:
+   - Format: String matching regex `^[a-zA-Z0-9_\-]{8,64}$` (e.g. `agent_alpha_orchestrator_001`).
+   - Purpose: Enables isolated job ownership. All jobs generated under this ID are isolated to this agent and aggregated in ClickHouse as an irreversible 16-character pseudonym (`X-FrameTalk-User-Hash`).
+2. **`X-API-Key` (Optional / BYOK)**:
+   - Format: Google Gemini API key (`AIzaSy...`).
+   - Purpose: If provided, requests execute against the agent's specific Google AI Studio quota. If omitted, the server falls back to its configured `GEMINI_API_KEY` environment variable.
+
+---
+
+## 3. End-to-End Autonomous Pipeline Workflow
+
+### Stage 0: Health & Optimistic Cache Probe
+Before uploading large files, check server health and probe if the video has already been analyzed.
+
+#### 1. Check Server Health
+```http
+GET /api/health HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+```
+**Response (200 OK):**
+```json
+{
+  "status": "healthy",
+  "service": "Frame Talk Studio Engine",
+  "clickhouse_connected": true,
+  "clickhouse_host": "localhost:8123",
+  "vision_model": "gemini-3.7-flash",
+  "script_model": "gemini-3.7-flash",
+  "tts_model": "gemini-3.1-flash-tts-preview"
+}
+```
+
+#### 2. Probe Cache (Instant Replay)
+Compute a fast client-side fingerprint (e.g. SHA-256 of the first 1MB concatenated with total file size: `{hash}_{filesize}`).
+```http
+GET /api/check-cache/{video_hash} HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+```
+**Response (200 OK - Cache Miss):**
+```json
+{
+  "cached": false,
+  "status": "NOT_FOUND",
+  "result": null
+}
+```
+*Note: If `cached` is `true`, the cached visual scenes are returned immediately, allowing the agent to skip Stages 1 and 2.*
+
+---
+
+### Stage 1: Asset Ingestion & Upload
+Upload the raw screencast and repository documentation.
+
+```http
+POST /api/upload HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="video"; filename="screencast.mp4"
+Content-Type: video/mp4
+
+<binary MP4 data>
+------WebKitFormBoundary
+Content-Disposition: form-data; name="readme"; filename="README.md"
+Content-Type: text/markdown
+
+# My Project
+Detailed features and architectural documentation...
+------WebKitFormBoundary--
+```
+
+**Response (200 OK):**
+```json
+{
+  "video_filename": "video_36cc8625b53d.mp4",
+  "video_path": "/uploads/video_36cc8625b53d.mp4",
+  "original_video_name": "screencast.mp4",
+  "video_hash": "3bee83cd93579b8504f6102a3ea57af43d230bdfefd60acc239c198aebb2136d",
+  "readme_filename": "readme_a1b2c3d4.md",
+  "readme_text": "# My Project\nDetailed features...",
+  "original_readme_name": "README.md"
+}
+```
+
+---
+
+### Stage 2: Multimodal Visual Scene Analysis
+Submit the uploaded video for frame-by-frame multimodal segmentation with `gemini-3.7-flash`.
+
+```http
+POST /api/analyze-video HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+Content-Type: application/json
+
+{
+  "video_filename": "video_36cc8625b53d.mp4",
+  "readme_text": "# My Project\nDetailed features...",
+  "video_duration_seconds": 120.0,
+  "video_hash": "3bee83cd93579b8504f6102a3ea57af43d230bdfefd60acc239c198aebb2136d"
+}
+```
+
+**Response (202 Accepted):**
+```json
+{
+  "job_id": "3bee83cd93579b8504f6102a3ea57af43d230bdfefd60acc239c198aebb2136d",
+  "status": "PENDING"
+}
+```
+
+#### Polling Job Status
+Poll `GET /api/jobs/{job_id}` every 2 seconds until status reaches `COMPLETED`.
+```http
+GET /api/jobs/3bee83cd93579b8504f6102a3ea57af43d230bdfefd60acc239c198aebb2136d HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+```
+
+**Response (200 OK - Completed):**
+```json
+{
+  "job_id": "3bee83cd93579b8504f6102a3ea57af43d230bdfefd60acc239c198aebb2136d",
+  "status": "COMPLETED",
+  "result": {
+    "scenes": [
+      {
+        "scene_id": "scene_1",
+        "start_time_ms": 0,
+        "end_time_ms": 25000,
+        "duration_ms": 25000,
+        "timestamp_str": "00:00 - 00:25",
+        "action_title": "Project Setup and Configuration",
+        "on_screen": "Terminal shows git clone and npm install commands executing successfully.",
+        "user_action": "Developer initializes project repository and verifies package dependencies.",
+        "app_reaction": "Build artifacts compile into dist directory with zero errors.",
+        "readme_feature": "Installation and Quickstart Guide"
+      }
+    ],
+    "eval_scorecard": {
+      "passed": true,
+      "overall_score": 96,
+      "specificity_score": 100.0,
+      "causality_score": 100.0,
+      "vision_grounding_score": 90.0,
+      "boilerplate_hits": 0
+    },
+    "total_scenes": 1
+  }
+}
+```
+
+---
+
+### Stage 3: Dialogue Script Generation & QA Audit
+Generate conversational two-host banter between Mark & Sarah tied directly to the visual scenes.
+
+```http
+POST /api/generate-script HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+Content-Type: application/json
+
+{
+  "scenes": [
+    {
+      "scene_id": "scene_1",
+      "start_time_ms": 0,
+      "end_time_ms": 25000,
+      "duration_ms": 25000,
+      "action_title": "Project Setup and Configuration",
+      "on_screen": "Terminal shows git clone and npm install...",
+      "user_action": "Developer initializes project...",
+      "app_reaction": "Build artifacts compile...",
+      "readme_feature": "Installation and Quickstart Guide"
+    }
+  ],
+  "readme_text": "# My Project\nDetailed features..."
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "dialogue": [
+    {
+      "turn_id": "turn_1",
+      "speaker": "Mark",
+      "role": "Host A (Tech Deep-Dive)",
+      "text": "Welcome to Frame Talk! Today we are looking at an autonomous multimodal engine.",
+      "scene_ref": "scene_1",
+      "cadence": "energetic"
+    },
+    {
+      "turn_id": "turn_2",
+      "speaker": "Sarah",
+      "role": "Host B (Dev Advocate)",
+      "text": "Right off the bat, look at that terminal setup. Clean install with zero dependency friction.",
+      "scene_ref": "scene_1",
+      "cadence": "conversational"
+    }
+  ],
+  "total_turns": 2
+}
+```
+
+#### Auditing the Script (QA Gate)
+```http
+POST /api/audit-script HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+Content-Type: application/json
+
+{
+  "scenes": [ ... ],
+  "dialogue": [ ... ],
+  "readme_text": "..."
+}
+```
+**Response (200 OK):**
+```json
+{
+  "score": 98,
+  "accuracy_score": 100,
+  "coverage_score": 96,
+  "naturalness_score": 98,
+  "passed": true,
+  "feedback": "Dialogue maintains perfect lockstep with on-screen terminal operations."
+}
+```
+
+---
+
+### Stage 4: Speech Synthesis & Chronos Alignment
+Synthesize high-fidelity PCM audio and compute dynamic video frame holds.
+
+```http
+POST /api/synthesize-audio HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+Content-Type: application/json
+
+{
+  "scenes": [ ... ],
+  "dialogue": [ ... ],
+  "voice_alex": "Puck",
+  "voice_sam": "Kore"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "session_id": "session_8f9a2b1c",
+  "audio_url": "/output/podcast_audio_8f9a2b1c.wav",
+  "audio_filename": "podcast_audio_8f9a2b1c.wav",
+  "total_audio_duration_ms": 32400,
+  "total_freeze_injected_ms": 7400,
+  "chronos_schedule": [
+    {
+      "scene_id": "scene_1",
+      "video_start_ms": 0,
+      "video_end_ms": 25000,
+      "video_duration_ms": 25000,
+      "speech_duration_ms": 32100,
+      "required_freeze_ms": 7400,
+      "timeline_start_ms": 0,
+      "timeline_end_ms": 32400,
+      "freeze_trigger_ms": 25000
+    }
+  ],
+  "updated_turns": [ ... ]
+}
+```
+
+---
+
+### Stage 5: Production Video Compilation
+Request the `CompilerAgent` to assemble the final 1080p MP4 with baked-in frame freezes.
+
+```http
+POST /api/compile-video HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+X-FrameTalk-User-Id: agent_runner_01
+Content-Type: application/json
+
+{
+  "session_id": "session_8f9a2b1c",
+  "video_filename": "video_36cc8625b53d.mp4",
+  "audio_filename": "podcast_audio_8f9a2b1c.wav",
+  "chronos_schedule": [ ... ]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "video_url": "/output/synced_video_8f9a2b1c.mp4",
+  "session_id": "session_8f9a2b1c",
+  "duration_seconds": 32.4
+}
+```
+
+---
+
+### Stage 6: Telemetry & Token Cost Queries
+Agents can inspect operational metrics and billing telemetry directly from ClickHouse.
+
+#### 1. Retrieve LLM Usage & Cost Breakdown
+```http
+GET /api/clickhouse/llm-metrics HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+```
+**Response (200 OK):**
+```json
+{
+  "total_llm_calls": 4,
+  "total_prompt_tokens": 42500,
+  "total_completion_tokens": 2800,
+  "total_tokens": 45300,
+  "total_cost_usd": 0.0384,
+  "by_model": {
+    "gemini-3.7-flash": {
+      "calls": 3,
+      "tokens": 44100,
+      "cost_usd": 0.0124
+    },
+    "gemini-3.1-flash-tts-preview": {
+      "calls": 1,
+      "tokens": 1200,
+      "cost_usd": 0.0260
+    }
+  }
+}
+```
+
+#### 2. Retrieve User & Funnel Distributions
+```http
+GET /api/clickhouse/user-statistics HTTP/1.1
+Host: frame-talk.taskmind-ai.com
+```
+**Response (200 OK):**
+```json
+{
+  "total_unique_users": 14,
+  "total_activity_events": 68,
+  "funnel": {
+    "VIDEO_ANALYZED": 14,
+    "SCRIPT_GENERATED": 12,
+    "AUDIO_SYNTHESIZED": 11,
+    "VIDEO_COMPILED": 9
+  },
+  "distributions": {
+    "VIDEO_ANALYZED": {
+      "avg_per_user": 2.14,
+      "min_per_user": 1,
+      "max_per_user": 6,
+      "active_users": 14
+    }
+  }
+}
+```
+
+---
+
+## 4. Autonomous Python Client Script
+
+AI agents can execute the entire workflow using the following standalone asynchronous Python script:
+
+```python
+import asyncio
+import httpx
+from pathlib import Path
+
+BASE_URL = "http://localhost:8000"
+USER_ID = "agent_autonomous_bot_01"
+
+async def run_frame_talk_pipeline(video_path: str, readme_path: str):
+    headers = {"X-FrameTalk-User-Id": USER_ID}
+
+    async with httpx.AsyncClient(base_url=BASE_URL, headers=headers, timeout=300.0) as client:
+        print("[1/6] Uploading assets...")
+        with open(video_path, "rb") as vf, open(readme_path, "rb") as rf:
+            files = {"video": vf, "readme": rf}
+            res = await client.post("/api/upload", files=files)
+            res.raise_for_status()
+            upload_data = res.json()
+
+        v_file = upload_data["video_filename"]
+        r_text = upload_data["readme_text"]
+        v_hash = upload_data["video_hash"]
+
+        print("[2/6] Starting Gemini 3.7 Flash frame analysis...")
+        res = await client.post("/api/analyze-video", json={
+            "video_filename": v_file,
+            "readme_text": r_text,
+            "video_duration_seconds": 60.0,
+            "video_hash": v_hash
+        })
+        res.raise_for_status()
+        job_id = res.json()["job_id"]
+
+        # Poll job completion
+        while True:
+            await asyncio.sleep(2.0)
+            res = await client.get(f"/api/jobs/{job_id}")
+            job = res.json()
+            if job["status"] == "COMPLETED":
+                scenes = job["result"]["scenes"]
+                print(f" -> Extracted {len(scenes)} visual scenes.")
+                break
+            elif job["status"] == "FAILED":
+                raise RuntimeError(f"Analysis failed: {job.get('error')}")
+
+        print("[3/6] Generating dialogue script...")
+        res = await client.post("/api/generate-script", json={
+            "scenes": scenes,
+            "readme_text": r_text
+        })
+        res.raise_for_status()
+        dialogue = res.json()["dialogue"]
+
+        print("[4/6] Synthesizing speech and computing Chronos sync...")
+        res = await client.post("/api/synthesize-audio", json={
+            "scenes": scenes,
+            "dialogue": dialogue,
+            "voice_alex": "Puck",
+            "voice_sam": "Kore"
+        })
+        res.raise_for_status()
+        synth = res.json()
+        print(f" -> Chronos injected {synth['total_freeze_injected_ms']}ms of dynamic holds.")
+
+        print("[5/6] Compiling final 1080p MP4...")
+        res = await client.post("/api/compile-video", json={
+            "session_id": synth["session_id"],
+            "video_filename": v_file,
+            "audio_filename": synth["audio_filename"],
+            "chronos_schedule": synth["chronos_schedule"]
+        })
+        res.raise_for_status()
+        compiled = res.json()
+        print(f" -> [COMPLETE] Video ready at: {BASE_URL}{compiled['video_url']}")
+
+if __name__ == "__main__":
+    asyncio.run(run_frame_talk_pipeline("test.mp4", "README.md"))
+```

@@ -18,10 +18,12 @@
 3. **Robotic Gaps vs. Continuous Dialogue:** Old tools insert 5–10s of dead silence buffers between turns to force speech into guessed timestamps, resulting in awkward, robotic ping-pong monologues.
 
 ### 💡 The Frame Talk Innovation
+* **Google Cloud Agent Builder & Vertex AI:** Multi-agent architecture conforming to Google Cloud Agent Builder specs (`/api/agent-builder/spec`) with dual-mode runtime support for Google Cloud Vertex AI Enterprise and Google AI Studio.
 * **Gemini 3.7 Flash Multimodal Comprehension:** Ingests raw `.mp4` video pixels directly via the Gemini File API, cross-referencing visual clicks, inputs, and state changes with `README.md` documentation.
 * **The Chronos Sync Engine:** Dialogue lines are synthesized into uncompressed 24 kHz 16-bit Mono PCM via **`gemini-3.1-flash-tts-preview`**, measuring runtime duration down to the millisecond ($\text{duration\_ms} = \text{pcm\_bytes} / 48$).
 * **Dynamic Visual Hold (Timeline Stretching):** When discussion in a visual scene requires more time than the screen naturally stayed on that state, Chronos calculates `required_freeze_ms`. The **Compiler Agent** dynamically expands the video timeline at the focal action point (70% scene depth), holding the relevant UI state while the hosts conclude their explanation, then resuming in exact lockstep!
 * **Organic Live Conversation:** Hosts **Mark / Alex** (Lead Systems Architect) and **Sarah / Sam** (Dev Advocate & UX Specialist) engage in rapid, collaborative dialogue with natural human turn-taking pauses (180ms – 240ms), realistic interjections, and zero synthetic timestamps.
+* **Zero-Friction Hosted Demo Quota:** Judges and reviewers get 3 free video podcast generations instantly with rate limiting and a $1.00 USD cost cap, with full BYOK support for unlimited runs.
 * **Client-Side Fast Hashing:** Uses the browser Web Crypto API to hash the first 1MB of video + file size in **~20ms**, enabling instant cache hits that bypass redundant 500MB uploads.
 * **Ephemeral 24h Storage Policy:** Auto-cleans video artifacts older than 24 hours to ensure zero disk bloat on production VPS instances.
 * **Enterprise Security Guardrails:** Comprehensive regex protection against indirect prompt injections, XML isolation boundary wrapping (`<untrusted_documentation>`), and path traversal defenses.
@@ -86,7 +88,8 @@ flowchart TD
 ## 🛠️ Mandatory Technical Stack Integration
 
 ### 1. Google Cloud Layer (The Core Brain)
-- **`gemini-3.7-flash` (Vision & Brain Workhorse):** Native video token execution analyzing temporal UI actions, clicks, and terminal logs directly from video pixels without external transcripts.
+- **Google Cloud Agent Builder (Multi-Agent Platform):** Coordinates Director & Ingestion Agent, Scriptwriter Persona Agent, QA Pacing Auditor Agent, and Chronos Sync Tool via a unified Agent Builder architecture (`/api/agent-builder/spec`).
+- **`gemini-3.7-flash` (Vertex AI & Gemini Vision):** Native video token execution analyzing temporal UI actions, clicks, and terminal logs directly from video pixels without external transcripts. Supports both Google Cloud Vertex AI Enterprise and Google AI Studio modes.
 - **`gemini-3.1-flash-tts-preview` (Audio & Speech):** Multi-speaker raw PCM synthesis (`Puck` for Mark, `Kore` for Sarah) enabling millisecond-precision duration metering.
 
 ### 2. Partner Track Layer: ClickHouse + Grafana Labs
@@ -182,6 +185,40 @@ Full methodology, metrics, and ground-truth schemas are documented in [**`TEST_P
 * **Production Security Headers:** Injected on all outgoing responses (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection: 1; mode=block`).
 * **Subprocess Deadlock Protection:** Enforced 180s/300s timeouts on all FFmpeg rendering subprocesses.
 * **GDPR Compliance:** Full Impressum (`/impressum.html`) and Privacy Policy (`/datenschutz.html`) with private operator disclaimers and Bring-Your-Own-Key (BYOK) privacy assurances.
+
+---
+
+## 🤖 AI Agent Backend API & Web Crawler Discovery
+
+Frame Talk is fully configured for search crawlers and autonomous backend AI agents:
+
+### 1. Web & AI Crawler Accessibility
+- **Robots Indexing (`/robots.txt`):** Configured with dedicated allow rules for search engines (Googlebot, Bingbot) and AI scrapers (`GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended`). Blocks internal `/uploads/` and `/output/` directories.
+- **Sitemap Index (`/sitemap.xml`):** Declares canonical application URLs and update frequencies.
+- **LLM Discovery Manifest (`/llms.txt`):** Adheres to the [`llms.txt`](https://llmstxt.org/) standard, providing LLM agents with high-level architectural summaries, endpoint directories, and model specifications.
+- **Full Agent Manual (`/llms-full.txt`):** Comprehensive programmatic execution manual with request/response schemas, Chronos timeline hold calculation formulas, and cURL commands.
+
+### 2. Programmatic Execution for Autonomous Agents
+Autonomous agents can drive the complete pipeline end-to-end via REST:
+
+```python
+import httpx
+
+# 1. Upload assets
+files = {"video": open("screencast.mp4", "rb"), "readme": open("README.md", "rb")}
+upload = httpx.post("http://localhost:8000/api/upload", files=files, headers={"X-FrameTalk-User-Id": "agent_01"}).json()
+
+# 2. Dispatch Gemini 3.7 Flash analysis
+job = httpx.post("http://localhost:8000/api/analyze-video", json={
+    "video_filename": upload["video_filename"],
+    "readme_text": upload["readme_text"],
+    "video_duration_seconds": 60.0,
+    "video_hash": upload["video_hash"]
+}, headers={"X-FrameTalk-User-Id": "agent_01"}).json()
+
+# 3. Generate dialogue script & Chronos audio alignment
+# (See /llms-full.txt for the full autonomous Python agent script)
+```
 
 ---
 

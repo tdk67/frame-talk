@@ -1,8 +1,8 @@
 """
-Audio Synthesis & Duration Engine.
-Synthesizes speech per line via Gemini TTS (multiSpeakerVoiceConfig)
-or OpenRouter, measures exact millisecond PCM length, concatenates
-speech with natural conversational pauses (180ms - 260ms), and wraps into WAV.
+Speech Synthesis Engine.
+Synthesizes speech lines via Google Cloud Gemini TTS (gemini-3.1-flash-tts-preview),
+measures exact millisecond PCM length, concatenates uncompressed 24kHz audio chunks
+with natural conversational pauses (180ms - 260ms), and wraps into master audio.
 """
 
 import os
@@ -37,7 +37,8 @@ class AudioSynthEngine:
         Synthesizes a single dialogue turn.
         Returns: (raw_pcm_bytes, duration_ms)
         """
-        active_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        from server.core.config import config
+        active_key = api_key or config.get_server_api_key()
         active_voice = voice_alex if speaker.lower() in ["alex", "mark"] else voice_sam
 
         if active_key:
@@ -47,12 +48,12 @@ class AudioSynthEngine:
                     dur_ms = int((len(pcm_bytes) / PCM_BYTES_PER_SECOND) * 1000)
                     try:
                         from server.core.pricing import calculate_llm_cost
-                        cost = calculate_llm_cost("gemini-3.1-flash-tts-preview", 0, len(text))
+                        cost = calculate_llm_cost(config.tts_model, 0, len(text))
                         from server.repositories.telemetry_repository import telemetry_repository
                         telemetry_repository.log_llm_call(
                             session_id="tts_synthesis",
-                            agent_name="AudioSynthEngine",
-                            model_name="gemini-3.1-flash-tts-preview",
+                            agent_name="ChronosAudioEngine",
+                            model_name=config.tts_model,
                             prompt_tokens=int(len(text) / 4),
                             completion_tokens=len(text),
                             total_tokens=int(len(text) / 4) + len(text),
@@ -63,54 +64,38 @@ class AudioSynthEngine:
                         logger.warning(f"TTS telemetry logging failed: {tel_err}")
                     return pcm_bytes, dur_ms
             except Exception as e:
-                logger.warning(f"TTS API failed for '{text[:20]}...' ({e}). Using synthesized audio.")
+                logger.warning(f"TTS API failed for '{text[:20]}...' ({e}). Using synthesized acoustic audio.")
 
         # Fallback harmonic acoustic speech synthesis
         return self._synthesize_acoustic_fallback(text, speaker)
 
     def _call_tts_api(self, text: str, voice: str, speaker: str, api_key: str) -> bytes:
         import requests
-        # Direct Gemini TTS endpoint
-        if api_key.startswith("AIzaSy") or not api_key.startswith("sk-or"):
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key={api_key}"
-            body = {
-                "contents": [{"parts": [{"text": text}]}],
-                "generationConfig": {
-                    "responseModalities": ["AUDIO"],
-                    "speechConfig": {
-                        "voiceConfig": {
-                            "prebuiltVoiceConfig": {"voiceName": voice}
-                        }
+        # Direct Google Cloud Gemini TTS endpoint
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key={api_key}"
+        body = {
+            "contents": [{"parts": [{"text": text}]}],
+            "generationConfig": {
+                "responseModalities": ["AUDIO"],
+                "speechConfig": {
+                    "voiceConfig": {
+                        "prebuiltVoiceConfig": {"voiceName": voice}
                     }
                 }
             }
-            resp = requests.post(url, json=body, timeout=30)
-            if resp.status_code == 200:
-                data = resp.json()
-                b64 = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("inlineData", {}).get("data")
-                if b64:
-                    raw_bytes = base64.b64decode(b64)
-                    # Strip 44-byte WAV header if returned as WAV container
-                    if len(raw_bytes) > 44 and raw_bytes[:4] == b'RIFF':
-                        return raw_bytes[44:]
-                    return raw_bytes
-
-        # OpenRouter audio/speech endpoint
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
         }
-        body = {
-            "model": "google/gemini-3.1-flash-tts-preview",
-            "input": text,
-            "voice": voice,
-            "response_format": "pcm"
-        }
-        resp = requests.post("https://openrouter.ai/api/v1/audio/speech", headers=headers, json=body, timeout=30)
+        resp = requests.post(url, json=body, timeout=30)
         if resp.status_code == 200:
-            return resp.content
+            data = resp.json()
+            b64 = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("inlineData", {}).get("data")
+            if b64:
+                raw_bytes = base64.b64decode(b64)
+                # Strip 44-byte WAV header if returned as WAV container
+                if len(raw_bytes) > 44 and raw_bytes[:4] == b'RIFF':
+                    return raw_bytes[44:]
+                return raw_bytes
 
-        raise RuntimeError(f"TTS API returned {resp.status_code}: {resp.text[:200]}")
+        raise RuntimeError(f"Gemini TTS API returned {resp.status_code}: {resp.text[:200]}")
 
     def _synthesize_acoustic_fallback(self, text: str, speaker: str) -> Tuple[bytes, int]:
         """

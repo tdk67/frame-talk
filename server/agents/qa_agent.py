@@ -10,11 +10,14 @@ import logging
 import re
 from typing import List, Dict, Any, Optional
 
+from server.core.agent_builder import get_genai_client
+from server.core.config import config
+
 logger = logging.getLogger("castops.agent.qa")
 
 class QaAgent:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        self.api_key = api_key or config.get_server_api_key()
 
     def audit_script(
         self,
@@ -151,13 +154,13 @@ OUTPUT JSON ONLY:
   }}
 }}
 """
-        if api_key.startswith("AIzaSy") or not api_key.startswith("sk-or"):
+        active_key = api_key
+        if active_key or config.vertex_ai_enabled:
             try:
-                from google import genai
                 from google.genai import types
-                client = genai.Client(api_key=api_key)
+                client = get_genai_client(active_key)
                 resp = client.models.generate_content(
-                    model='gemini-3.7-flash',
+                    model=config.qa_model,
                     contents=[prompt],
                     config=types.GenerateContentConfig(response_mime_type="application/json")
                 )
@@ -165,12 +168,12 @@ OUTPUT JSON ONLY:
                     p_tok = getattr(resp.usage_metadata, "prompt_token_count", 0) if hasattr(resp, "usage_metadata") else 0
                     c_tok = getattr(resp.usage_metadata, "candidates_token_count", 0) if hasattr(resp, "usage_metadata") else 0
                     from server.core.pricing import calculate_llm_cost
-                    cost = calculate_llm_cost("gemini-3.7-flash", p_tok, c_tok)
+                    cost = calculate_llm_cost(config.qa_model, p_tok, c_tok)
                     from server.repositories.telemetry_repository import telemetry_repository
                     telemetry_repository.log_llm_call(
                         session_id="qa_audit",
-                        agent_name="QAAgent",
-                        model_name="gemini-3.7-flash",
+                        agent_name="QAPacingAuditorAgent",
+                        model_name=config.qa_model,
                         prompt_tokens=p_tok,
                         completion_tokens=c_tok,
                         total_tokens=p_tok + c_tok,
@@ -184,21 +187,8 @@ OUTPUT JSON ONLY:
                     return json.loads(match.group(0))
                 return json.loads(cleaned)
             except Exception as ex:
-                logger.warning(f"Direct Google GenAI QA call failed: {ex}. Falling back to HTTP...")
+                logger.warning(f"Google GenAI QA audit call failed: {ex}")
 
-        import requests
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        body = {
-            "model": "google/gemini-3.7-flash",
-            "messages": [{"role": "user", "content": prompt}],
-            "response_format": {"type": "json_object"}
-        }
-        resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=body, timeout=30)
-        if resp.status_code == 200:
-            cleaned = resp.json()["choices"][0]["message"]["content"]
-            match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-            if match:
-                return json.loads(match.group(0))
         return None
 
 qa_agent = QaAgent()

@@ -16,6 +16,11 @@ class HealthResponse(BaseModel):
     vision_model: str
     script_model: str
     tts_model: str
+    domain: Optional[str] = None
+    app_url: Optional[str] = None
+    grafana_url: Optional[str] = None
+    vertex_ai_enabled: bool = False
+    agent_builder_enabled: bool = True
 
 # ─── Uploads & Ingestion ─────────────────────────────────────────────────────
 

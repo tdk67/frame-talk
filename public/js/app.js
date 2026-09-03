@@ -35,18 +35,36 @@ async function checkBackendHealth() {
         if (chText) chText.textContent = 'ClickHouse Standby';
     }
 
-    // Check Gemini API key config state
+    // Check Gemini API key config state & hosted demo quota
     const keyBadge = document.getElementById('api-status-badge');
     const keyText = document.getElementById('api-status-text');
     const hasKey = !!store.getState().apiKey;
+
+    const quota = await api.getQuota(store.getState().apiKey);
 
     if (hasKey) {
         if (keyBadge) {
             keyBadge.classList.remove('unconfigured');
             keyBadge.style.borderColor = 'rgba(74, 222, 128, 0.4)';
-            keyBadge.setAttribute('aria-label', 'API Key configured. Click to change.');
+            keyBadge.setAttribute('aria-label', 'BYOK Configured (Unlimited runs). Click to change.');
         }
-        if (keyText) keyText.textContent = 'BYOK Configured';
+        if (keyText) keyText.textContent = 'BYOK Unlimited';
+    } else if (quota && quota.has_server_key) {
+        if (quota.is_quota_exhausted) {
+            if (keyBadge) {
+                keyBadge.classList.add('unconfigured');
+                keyBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                keyBadge.setAttribute('aria-label', 'Hosted demo quota used (3/3). Click to set Gemini API key.');
+            }
+            if (keyText) keyText.textContent = 'Demo Used (Add Key)';
+        } else {
+            if (keyBadge) {
+                keyBadge.classList.remove('unconfigured');
+                keyBadge.style.borderColor = 'rgba(56, 189, 248, 0.5)';
+                keyBadge.setAttribute('aria-label', `Hosted Demo Key Active (${quota.videos_remaining}/${quota.max_videos} free runs left). Click to enter custom key.`);
+            }
+            if (keyText) keyText.textContent = `Demo: ${quota.videos_remaining}/${quota.max_videos} Left`;
+        }
     } else {
         if (keyBadge) {
             keyBadge.classList.add('unconfigured');
@@ -55,16 +73,27 @@ async function checkBackendHealth() {
         if (keyText) keyText.textContent = 'Set API Key';
     }
 
-    // Dynamically route Grafana dashboard link
+    // Dynamically route Grafana dashboard link from backend config or current domain
     const grafanaLink = document.getElementById('grafana-dashboard-link');
     if (grafanaLink) {
-        const host = window.location.hostname;
-        if (host.includes('taskmind-ai.com')) {
-            grafanaLink.href = 'https://grafana.taskmind-ai.com';
-        } else if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
-            grafanaLink.href = `http://${host}:3004`;
+        if (health && health.grafana_url) {
+            grafanaLink.href = health.grafana_url;
+        } else {
+            const host = window.location.hostname;
+            if (host === 'localhost' || host === '127.0.0.1') {
+                grafanaLink.href = 'http://localhost:3000';
+            } else {
+                const rootDomain = host.replace(/^frame-talk\./, '');
+                grafanaLink.href = `https://grafana.${rootDomain}`;
+            }
         }
     }
+
+    // Dynamically align canonical and Open Graph URLs to active origin
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) canonicalLink.href = window.location.origin + '/';
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.content = window.location.origin + '/';
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -369,10 +398,16 @@ function initControls() {
             }
             markAgentStatus('agent-transcript-status', 'Ingestion Agent: Complete');
             toast.success(`Video parsed into ${analyzeRes.scenes.length} visual scenes!`, 'Analysis Complete');
+            checkBackendHealth();
             setTimeout(() => setStepLoading(2, false), 400);
         } catch (e) {
             console.error("Video Analysis Pipeline Error:", e);
-            toast.error(`${e.message} (Please verify your server and file format)`, 'Analysis Error');
+            if (e.message && (e.message.includes('Quota') || e.message.includes('429') || e.message.includes('QUOTA_EXHAUSTED'))) {
+                toast.warning(e.message, 'Hosted Demo Quota Limit');
+                setTimeout(() => window.openKeyModal(), 500);
+            } else {
+                toast.error(`${e.message} (Please verify your server and file format)`, 'Analysis Error');
+            }
             setStepLoading(2, false);
         }
     };
@@ -717,7 +752,7 @@ function updateStepProgress(stepNum, percent) {
 function initKeyModal() {
     let lastActiveElement = null;
 
-    window.openKeyModal = () => {
+    window.openKeyModal = async () => {
         lastActiveElement = document.activeElement;
         const modal = document.getElementById('key-modal');
         if (modal) {
@@ -728,6 +763,30 @@ function initKeyModal() {
         if (input) {
             input.value = store.getState().apiKey;
             setTimeout(() => input.focus(), 120);
+        }
+
+        // Refresh quota banner
+        const banner = document.getElementById('modal-quota-banner');
+        if (banner) {
+            const quota = await api.getQuota(store.getState().apiKey);
+            if (quota && quota.has_server_key) {
+                if (quota.has_custom_key) {
+                    banner.innerHTML = `✅ <strong>Custom Key Active:</strong> You have unlimited runs enabled via your own Google Gemini API key.`;
+                    banner.style.color = '#15803d';
+                    banner.style.background = 'rgba(74, 222, 128, 0.1)';
+                    banner.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+                } else if (quota.is_quota_exhausted) {
+                    banner.innerHTML = `⚠️ <strong>Hosted Demo Exhausted:</strong> You have used all ${quota.videos_used}/${quota.max_videos} free demo runs. Enter your free Google Gemini API key below to continue running unlimited generations!`;
+                    banner.style.color = '#b91c1c';
+                    banner.style.background = 'rgba(239, 68, 68, 0.1)';
+                    banner.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                } else {
+                    banner.innerHTML = `⚡ <strong>Hosted Demo Active:</strong> You have <strong>${quota.videos_remaining}/${quota.max_videos}</strong> free generations remaining without needing an API key! To unlock unlimited runs, enter your Google Gemini API key below.`;
+                    banner.style.color = '#0284c7';
+                    banner.style.background = 'rgba(56, 189, 248, 0.1)';
+                    banner.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+                }
+            }
         }
     };
 
@@ -786,10 +845,10 @@ function initKeyModal() {
         
         const val = input ? input.value.trim() : '';
         if (!val) {
-            if (err) {
-                err.textContent = 'Please enter an API key.';
-                err.style.display = 'block';
-            }
+            store.setState({ apiKey: '' });
+            checkBackendHealth();
+            window.closeKeyModal();
+            toast.info('Reverted to Hosted Demo Mode.', 'Credentials Updated');
             return;
         }
 

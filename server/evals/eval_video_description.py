@@ -56,7 +56,8 @@ SPECIFICITY_PATTERNS = [
 
 class VideoDescriptionEvaluator:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        from server.core.config import config
+        self.api_key = api_key or config.get_server_api_key()
 
     def evaluate_scenes(
         self,

@@ -1,0 +1,254 @@
+"""
+Model Context Protocol (MCP) Server Endpoint for Frame Talk.
+Enables Google Cloud Agent Platform / Agent Builder and other MCP clients
+to discover and execute Chronos Sync, ClickHouse Telemetry, and Audio duration tools.
+Implements the JSON-RPC 2.0 MCP specification over HTTP.
+"""
+
+import logging
+from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, Request, Response
+from fastapi.responses import JSONResponse
+from server.sync.chronos_engine import chronos_engine
+from server.repositories.telemetry_repository import telemetry_repository
+
+logger = logging.getLogger("frametalk.api.mcp")
+
+router = APIRouter(tags=["5. Model Context Protocol (MCP)"])
+
+MCP_TOOLS = [
+    {
+        "name": "calculate_chronos_hold",
+        "description": (
+            "Calculates millisecond PCM duration and required dynamic video hold (freeze duration) "
+            "using the Chronos synchronization engine math (pcm_bytes / 48)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "speech_text": {
+                    "type": "string",
+                    "description": "Dialogue script text to be spoken in the scene."
+                },
+                "video_duration_ms": {
+                    "type": "integer",
+                    "description": "Actual duration of the visual screencast scene in milliseconds."
+                },
+                "words_per_second": {
+                    "type": "number",
+                    "default": 2.5,
+                    "description": "Speech velocity pacing (default: 2.5 words/sec)."
+                }
+            },
+            "required": ["speech_text", "video_duration_ms"]
+        }
+    },
+    {
+        "name": "log_clickhouse_telemetry",
+        "description": (
+            "Streams real-time time-series synchronization events to ClickHouse (castops.sync_events) "
+            "for live monitoring on the Grafana Labs observability dashboard."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "Unique session or video run identifier."
+                },
+                "scene_id": {
+                    "type": "string",
+                    "description": "Target visual scene identifier (e.g. scene_1)."
+                },
+                "event_type": {
+                    "type": "string",
+                    "description": "Type of event (e.g. AUDIO_SYNTH, TIMELINE_FREEZE_INJECTED)."
+                },
+                "audio_duration_ms": {
+                    "type": "integer",
+                    "description": "Measured PCM audio duration in milliseconds."
+                },
+                "freeze_injected_ms": {
+                    "type": "integer",
+                    "description": "Calculated video hold length in milliseconds."
+                }
+            },
+            "required": ["session_id", "event_type"]
+        }
+    },
+    {
+        "name": "audit_script_pacing",
+        "description": (
+            "Audits technical dialogue for anti-timestamp compliance (no explicit 'at 0:14' mentions) "
+            "and mathematical speech pacing budget against visual scene duration."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "dialogue_text": {
+                    "type": "string",
+                    "description": "Candidate line of dialogue."
+                },
+                "target_duration_sec": {
+                    "type": "number",
+                    "description": "Scene video length in seconds."
+                }
+            },
+            "required": ["dialogue_text", "target_duration_sec"]
+        }
+    }
+]
+
+def handle_mcp_call(method: str, params: Dict[str, Any], msg_id: Any) -> Dict[str, Any]:
+    """Processes MCP JSON-RPC 2.0 requests."""
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {"listChanged": False}
+                },
+                "serverInfo": {
+                    "name": "FrameTalk-Chronos-Tool",
+                    "version": "1.0.0",
+                    "description": "Frame Talk Chronos Sync, Video Hold & ClickHouse Observability MCP Server"
+                }
+            }
+        }
+
+    if method in ("notifications/initialized", "initialized"):
+        return {"jsonrpc": "2.0", "id": msg_id, "result": {}}
+
+    if method == "ping":
+        return {"jsonrpc": "2.0", "id": msg_id, "result": {}}
+
+    if method == "tools/list":
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": {
+                "tools": MCP_TOOLS
+            }
+        }
+
+    if method == "tools/call":
+        tool_name = params.get("name")
+        args = params.get("arguments", {})
+
+        if tool_name == "calculate_chronos_hold":
+            speech_text = args.get("speech_text", "")
+            video_dur_ms = int(args.get("video_duration_ms", 1000))
+            words = [w for w in speech_text.split() if w]
+            wps = float(args.get("words_per_second", 2.5))
+            est_audio_ms = int((len(words) / wps) * 1000) if words else 1000
+
+            # Chronos formula: required_freeze_ms = max(0, speech_needed - video_dur + 300ms)
+            freeze_ms = max(0, est_audio_ms - video_dur_ms + 300) if est_audio_ms > video_dur_ms else 0
+            
+            result_payload = {
+                "speech_duration_ms": est_audio_ms,
+                "video_duration_ms": video_dur_ms,
+                "required_freeze_ms": freeze_ms,
+                "freeze_anchor_ratio": 0.70,
+                "status": "FREEZE_REQUIRED" if freeze_ms > 0 else "NO_FREEZE_NEEDED"
+            }
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "content": [{"type": "text", "text": str(result_payload)}],
+                    "isError": False
+                }
+            }
+
+        if tool_name == "log_clickhouse_telemetry":
+            session_id = args.get("session_id", "mcp_session")
+            event_type = args.get("event_type", "MCP_EVENT")
+            scene_id = args.get("scene_id", "scene_1")
+            audio_dur = int(args.get("audio_duration_ms", 0))
+            freeze_dur = int(args.get("freeze_injected_ms", 0))
+
+            telemetry_repository.log_sync_event(
+                session_id=session_id,
+                scene_id=scene_id,
+                audio_chunk_id="mcp_chunk",
+                audio_duration_ms=audio_dur,
+                video_scene_duration_ms=audio_dur - freeze_dur,
+                freeze_duration_ms=freeze_dur,
+                drift_delta_ms=0,
+                status="SYNCED"
+            )
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "content": [{"type": "text", "text": f"Successfully streamed {event_type} event to ClickHouse."}],
+                    "isError": False
+                }
+            }
+
+        if tool_name == "audit_script_pacing":
+            dialogue_text = args.get("dialogue_text", "")
+            target_dur_sec = float(args.get("target_duration_sec", 5.0))
+            import re
+            has_timestamps = bool(re.search(r'\b\d{1,2}:\d{2}\b', dialogue_text))
+            words = len(dialogue_text.split())
+            est_sec = words / 2.5
+            pacing_ratio = round(est_sec / target_dur_sec, 2) if target_dur_sec > 0 else 1.0
+
+            result_payload = {
+                "contains_forbidden_timestamps": has_timestamps,
+                "word_count": words,
+                "estimated_speech_seconds": round(est_sec, 2),
+                "target_seconds": target_dur_sec,
+                "pacing_ratio": pacing_ratio,
+                "passed": not has_timestamps and (0.7 <= pacing_ratio <= 1.5)
+            }
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "content": [{"type": "text", "text": str(result_payload)}],
+                    "isError": False
+                }
+            }
+
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": {"code": -32601, "message": f"Tool '{tool_name}' not found."}
+        }
+
+    return {
+        "jsonrpc": "2.0",
+        "id": msg_id,
+        "error": {"code": -32601, "message": f"Method '{method}' not implemented."}
+    }
+
+@router.post("/mcp")
+async def mcp_post_endpoint(request: Request):
+    """MCP JSON-RPC 2.0 message handler for Google Cloud Agent Platform."""
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}}, status_code=400)
+
+    method = data.get("method", "")
+    params = data.get("params", {})
+    msg_id = data.get("id")
+
+    res = handle_mcp_call(method, params, msg_id)
+    return JSONResponse(res)
+
+@router.get("/mcp")
+async def mcp_get_endpoint():
+    """Returns the MCP server capability description and tool list."""
+    return {
+        "name": "FrameTalk-Chronos-Tool",
+        "protocol": "Model Context Protocol (MCP)",
+        "version": "1.0.0",
+        "transport": "HTTP/JSON-RPC 2.0",
+        "tools": MCP_TOOLS
+    }

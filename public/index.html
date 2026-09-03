@@ -9,21 +9,21 @@
     <meta name="author" content="Frame Talk Studio">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#0C2A4A">
-    <link rel="canonical" href="https://frame-talk.taskmind-ai.com/">
+    <link rel="canonical" href="/">
 
     <!-- Open Graph / Social Media Preview -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://frame-talk.taskmind-ai.com/">
+    <meta property="og:url" content="/">
     <meta property="og:title" content="Frame Talk: Multimodal Screen-to-Podcast Engine">
     <meta property="og:description" content="Turn silent developer screencasts into synchronized two-host podcast walkthroughs using gemini-3.7-flash and Chronos timeline stretching.">
-    <meta property="og:image" content="https://frame-talk.taskmind-ai.com/og-preview.png">
+    <meta property="og:image" content="/og-preview.png">
     <meta property="og:site_name" content="Frame Talk">
 
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Frame Talk: Multimodal Screen-to-Podcast Engine">
     <meta name="twitter:description" content="Turn silent developer screencasts into synchronized two-host podcast walkthroughs using gemini-3.7-flash and Chronos timeline stretching.">
-    <meta name="twitter:image" content="https://frame-talk.taskmind-ai.com/og-preview.png">
+    <meta name="twitter:image" content="/og-preview.png">
 
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -578,7 +578,7 @@
                 <div class="security-status-box">
                     <div class="security-header">
                         <span class="shield-icon">⚡</span>
-                        <span class="openrouter-text">Gemini 3.7 Flash</span>
+                        <span class="gemini-badge-text">Gemini 3.7 Flash</span>
                     </div>
                     <div class="security-check" id="sidebar-key-status">
                         <span class="dot-green">●</span> Multimodal Active
@@ -636,12 +636,15 @@
     <!-- Key Validation Modal -->
     <div id="key-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title-key" aria-describedby="modal-desc-key" aria-hidden="true">
         <div class="modal-card">
-            <h2 id="modal-title-key" style="margin-bottom: 1rem;">Configure API Key</h2>
+            <h2 id="modal-title-key" style="margin-bottom: 0.5rem;">API Key & Demo Access</h2>
+            <div id="modal-quota-banner" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: #0284c7; line-height: 1.4;">
+                ⚡ <strong>Hosted Demo Active:</strong> You have free generations courtesy of the host (no API key needed to test). Enter your own Google Gemini API key below to unlock unlimited runs.
+            </div>
             <p id="modal-desc-key" style="color: var(--color-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                Enter your Google Gemini API key (starts with AIzaSy). It is stored securely in your browser's localStorage.
+                Enter your Google Gemini API key (starts with AIzaSy). Stored securely in your browser's localStorage.
             </p>
             <p style="color: var(--color-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
-                Need a key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--color-blue); text-decoration: none;">Google AI Studio</a>.
+                Need a key? Get one free from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--color-blue); text-decoration: none;">Google AI Studio</a>.
             </p>
             <div class="form-group">
                 <label for="api-key-input">API Key</label>

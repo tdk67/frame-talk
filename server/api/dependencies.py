@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import Header
 
 def get_api_key(
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key", description="Gemini or OpenRouter API key"),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key", description="Google Gemini API key (Optional if using Hosted Demo Key)"),
     authorization: Optional[str] = Header(None, description="Standard Bearer token header")
 ) -> Optional[str]:
     """

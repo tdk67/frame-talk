@@ -1,0 +1,44 @@
+# ==============================================================================
+# Frame Talk: Robots.txt Specification
+# Multimodal Screen-to-Podcast Studio Engine
+# Host: https://frame-talk.taskmind-ai.com
+# ==============================================================================
+
+# 1. Standard Web Search Crawlers (Google, Bing, DuckDuckGo, Baidu, Yandex)
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /impressum.html
+Allow: /datenschutz.html
+Allow: /sitemap.xml
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /api/health
+Allow: /api/docs
+Allow: /api/openapi.json
+
+# Disallow raw internal uploads and output directories
+Disallow: /uploads/
+Disallow: /output/
+Disallow: /api/jobs/
+
+# 2. AI Crawlers & LLM Scrapers (OpenAI, Anthropic, Google, Perplexity, Cohere)
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: Google-Extended
+User-agent: PerplexityBot
+User-agent: CCBot
+User-agent: Bytespider
+User-agent: cohere-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /sitemap.xml
+Allow: /api/openapi.json
+Disallow: /uploads/
+Disallow: /output/
+
+# 3. Sitemap Index Reference
+Sitemap: https://frame-talk.taskmind-ai.com/sitemap.xml

@@ -20,8 +20,28 @@ def health_check():
         clickhouse_host=telemetry_repository.host_info,
         vision_model=config.vision_model,
         script_model=config.script_model,
-        tts_model=config.tts_model
+        tts_model=config.tts_model,
+        domain=config.domain,
+        app_url=config.app_url,
+        grafana_url=config.grafana_url,
+        vertex_ai_enabled=config.vertex_ai_enabled,
+        agent_builder_enabled=True
     )
+
+@router.get("/agent-builder/spec")
+def get_agent_builder_specification():
+    """Returns the Google Cloud Agent Builder architecture specification and tool contracts."""
+    from server.core.agent_builder import get_agent_builder_spec
+    return get_agent_builder_spec()
+
+@router.get("/quota")
+def get_user_quota(request: Request):
+    """Returns user quota status for hosted demo key vs custom BYOK key."""
+    from server.services.quota_service import quota_service
+    user_hash = getattr(request.state, "user_hash", "anon_default")
+    key = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+    has_custom_key = bool(key and key.strip())
+    return quota_service.get_quota_status(user_hash=user_hash, has_custom_key=has_custom_key)
 
 @router.get("/clickhouse/events")
 def get_clickhouse_events(session_id: Optional[str] = None, limit: int = 50):

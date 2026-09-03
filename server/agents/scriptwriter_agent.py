@@ -11,11 +11,14 @@ import logging
 import re
 from typing import List, Dict, Any, Optional
 
+from server.core.agent_builder import get_genai_client
+from server.core.config import config
+
 logger = logging.getLogger("castops.agent.scriptwriter")
 
 class ScriptwriterAgent:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        self.api_key = api_key or config.get_server_api_key()
 
     def generate_live_dialogue(
         self,
@@ -27,7 +30,7 @@ class ScriptwriterAgent:
         Creates an organic conversational technical dialogue between Alex and Sam,
         broken down scene by scene.
         """
-        active_key = api_key or self.api_key
+        active_key = api_key or self.api_key or config.get_server_api_key()
 
         # Inject video duration into scenes for LLM context
         enhanced_scenes = []
@@ -80,7 +83,7 @@ Output ONLY a raw JSON object with a "dialogue" array:
 }}
 """
 
-        if active_key:
+        if active_key or config.vertex_ai_enabled:
             try:
                 raw = self._call_llm(prompt, active_key)
                 parsed = self._extract_json(raw)
@@ -93,51 +96,31 @@ Output ONLY a raw JSON object with a "dialogue" array:
         return self._generate_procedural_dialogue(scenes)
 
     def _call_llm(self, prompt: str, api_key: str) -> str:
-        if api_key.startswith("AIzaSy") or not api_key.startswith("sk-or"):
-            try:
-                from google import genai
-                from google.genai import types
-                client = genai.Client(api_key=api_key)
-                resp = client.models.generate_content(
-                    model='gemini-3.7-flash',
-                    contents=[prompt],
-                    config=types.GenerateContentConfig(response_mime_type="application/json")
-                )
-                try:
-                    p_tok = getattr(resp.usage_metadata, "prompt_token_count", 0) if hasattr(resp, "usage_metadata") else 0
-                    c_tok = getattr(resp.usage_metadata, "candidates_token_count", 0) if hasattr(resp, "usage_metadata") else 0
-                    from server.core.pricing import calculate_llm_cost
-                    cost = calculate_llm_cost("gemini-3.7-flash", p_tok, c_tok)
-                    from server.repositories.telemetry_repository import telemetry_repository
-                    telemetry_repository.log_llm_call(
-                        session_id="scriptwriter",
-                        agent_name="ScriptwriterAgent",
-                        model_name="gemini-3.7-flash",
-                        prompt_tokens=p_tok,
-                        completion_tokens=c_tok,
-                        total_tokens=p_tok + c_tok,
-                        cost_usd=cost
-                    )
-                except Exception as tel_err:
-                    logger.warning(f"Telemetry logging failed: {tel_err}")
-                return resp.text
-            except Exception as ex:
-                logger.warning(f"Direct Google GenAI call failed: {ex}. Trying HTTP...")
-
-        import requests
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        body = {
-            "model": "google/gemini-3.7-flash",
-            "messages": [{"role": "user", "content": prompt}],
-            "response_format": {"type": "json_object"}
-        }
-        resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=body, timeout=45)
-        if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
-        raise RuntimeError(f"API failed with code {resp.status_code}: {resp.text}")
+        from google.genai import types
+        client = get_genai_client(api_key)
+        resp = client.models.generate_content(
+            model=config.script_model,
+            contents=[prompt],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        try:
+            p_tok = getattr(resp.usage_metadata, "prompt_token_count", 0) if hasattr(resp, "usage_metadata") else 0
+            c_tok = getattr(resp.usage_metadata, "candidates_token_count", 0) if hasattr(resp, "usage_metadata") else 0
+            from server.core.pricing import calculate_llm_cost
+            cost = calculate_llm_cost(config.script_model, p_tok, c_tok)
+            from server.repositories.telemetry_repository import telemetry_repository
+            telemetry_repository.log_llm_call(
+                session_id="scriptwriter",
+                agent_name="ScriptwriterPersonaAgent",
+                model_name=config.script_model,
+                prompt_tokens=p_tok,
+                completion_tokens=c_tok,
+                total_tokens=p_tok + c_tok,
+                cost_usd=cost
+            )
+        except Exception as tel_err:
+            logger.warning(f"Telemetry logging failed: {tel_err}")
+        return resp.text
 
     def _clean_and_index_turns(self, turns: List[Dict[str, Any]], scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         cleaned = []

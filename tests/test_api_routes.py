@@ -119,5 +119,57 @@ class TestApiRoutes(unittest.TestCase):
         self.assertEqual(data["video_duration_sec"], 120.0)
         self.assertGreater(data["total_estimated_cost_usd"], 0.0)
 
+    def test_quota_endpoint(self):
+        """Verify /api/quota returns user quota status."""
+        response = self.client.get("/api/quota")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("max_videos", data)
+        self.assertIn("videos_remaining", data)
+        self.assertIn("hosted_mode", data)
+
+    def test_agent_builder_spec_endpoint(self):
+        """Verify /api/agent-builder/spec returns Google Cloud Agent Builder specification."""
+        response = self.client.get("/api/agent-builder/spec")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("platform", data)
+        self.assertIn("agents", data)
+        self.assertEqual(len(data["agents"]), 4)
+
+    def test_mcp_endpoints(self):
+        """Verify /mcp endpoint implements Model Context Protocol for Google Cloud Agent Platform."""
+        # 1. GET returns tool inventory
+        res_get = self.client.get("/mcp")
+        self.assertEqual(res_get.status_code, 200)
+        self.assertIn("tools", res_get.json())
+
+        # 2. POST initialize handshake
+        res_init = self.client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+        self.assertEqual(res_init.status_code, 200)
+        self.assertEqual(res_init.json()["result"]["serverInfo"]["name"], "FrameTalk-Chronos-Tool")
+
+        # 3. POST tools/list
+        res_list = self.client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+        self.assertEqual(res_list.status_code, 200)
+        self.assertEqual(len(res_list.json()["result"]["tools"]), 3)
+
+        # 4. POST tools/call for Chronos calculation
+        call_payload = {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "calculate_chronos_hold",
+                "arguments": {
+                    "speech_text": "Here is an extended explanation of our distributed architecture and data flow.",
+                    "video_duration_ms": 2000
+                }
+            }
+        }
+        res_call = self.client.post("/mcp", json=call_payload)
+        self.assertEqual(res_call.status_code, 200)
+        self.assertFalse(res_call.json()["result"]["isError"])
+
 if __name__ == "__main__":
     unittest.main()

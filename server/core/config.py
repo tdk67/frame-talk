@@ -11,6 +11,25 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = BASE_DIR / "config.json"
 
+ENV_PATH = BASE_DIR / ".env"
+
+def _load_dotenv(env_path: Path):
+    if env_path.exists():
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+_load_dotenv(ENV_PATH)
+
 class AppConfig:
     def __init__(self, config_path: Path = CONFIG_PATH):
         self.config_path = config_path
@@ -29,6 +48,51 @@ class AppConfig:
     @property
     def version(self) -> str:
         return self._data.get("version", "1.0.0")
+
+    @property
+    def domain(self) -> str:
+        return os.getenv("APP_DOMAIN", self._data.get("domain", "taskmind-ai.com"))
+
+    @property
+    def app_subdomain(self) -> str:
+        return os.getenv("APP_SUBDOMAIN", self._data.get("app_subdomain", "frame-talk"))
+
+    @property
+    def grafana_subdomain(self) -> str:
+        return os.getenv("GRAFANA_SUBDOMAIN", self._data.get("grafana_subdomain", "grafana"))
+
+    @property
+    def app_url(self) -> str:
+        env_url = os.getenv("APP_URL")
+        if env_url:
+            return env_url.rstrip("/")
+        sub = f"{self.app_subdomain}." if self.app_subdomain else ""
+        return f"https://{sub}{self.domain}".rstrip("/")
+
+    @property
+    def grafana_url(self) -> str:
+        env_url = os.getenv("GRAFANA_URL")
+        if env_url:
+            return env_url.rstrip("/")
+        sub = f"{self.grafana_subdomain}." if self.grafana_subdomain else ""
+        return f"https://{sub}{self.domain}".rstrip("/")
+
+    @property
+    def cors_origins(self) -> List[str]:
+        env_cors = os.getenv("CORS_ORIGINS")
+        if env_cors:
+            return [origin.strip() for origin in env_cors.split(",") if origin.strip()]
+        return [
+            self.app_url,
+            self.grafana_url,
+            f"https://{self.domain}",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3004",
+            "http://127.0.0.1:3004",
+        ]
 
     @property
     def vision_model(self) -> str:
@@ -127,5 +191,32 @@ class AppConfig:
     @property
     def supported_video_extensions(self) -> List[str]:
         return self._data.get("video_limits", {}).get("supported_extensions", [".mp4", ".webm", ".mov", ".mkv"])
+
+    @property
+    def vertex_ai_enabled(self) -> bool:
+        env_val = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")
+        if env_val is not None:
+            return env_val.lower() in ("true", "1", "yes")
+        return bool(self._data.get("vertex_ai", {}).get("enabled", False))
+
+    @property
+    def google_cloud_project(self) -> str:
+        return os.getenv("GOOGLE_CLOUD_PROJECT", self._data.get("vertex_ai", {}).get("project", "agentic-cinema-frametalk"))
+
+    @property
+    def google_cloud_location(self) -> str:
+        return os.getenv("GOOGLE_CLOUD_LOCATION", self._data.get("vertex_ai", {}).get("location", "us-central1"))
+
+    @property
+    def max_hosted_videos_per_user(self) -> int:
+        return int(os.getenv("MAX_HOSTED_VIDEOS_PER_USER", self._data.get("quota", {}).get("max_hosted_videos_per_user", 3)))
+
+    @property
+    def max_hosted_cost_per_user_usd(self) -> float:
+        return float(os.getenv("MAX_HOSTED_COST_PER_USER_USD", self._data.get("quota", {}).get("max_hosted_cost_per_user_usd", 1.00)))
+
+    def get_server_api_key(self) -> str:
+        """Returns the server-configured Gemini/Google API key if set."""
+        return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
 
 config = AppConfig()

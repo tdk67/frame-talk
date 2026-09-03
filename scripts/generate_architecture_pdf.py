@@ -12,6 +12,11 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable
 )
 from reportlab.graphics.shapes import Drawing, Rect, String, Line, Group, Polygon
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from server.core.config import config
 
 OUTPUT_PDF = "ARCHITECTURE.pdf"
 
@@ -122,8 +127,8 @@ def build_architecture_pdf():
     story.append(Paragraph("🎙️ Frame Talk: System Architecture & Engineering Specification", title_style))
     story.append(Spacer(1, 3))
     story.append(Paragraph(
-        "<b>Built for the Agentic Cinema Hackathon</b> | Live Studio: <b>https://frame-talk.taskmind-ai.com</b> | "
-        "Observability: <b>https://grafana.taskmind-ai.com</b>", subtitle_style
+        f"<b>Built for the Agentic Cinema Hackathon</b> | Live Studio: <b>{config.app_url}</b> | "
+        f"Observability: <b>{config.grafana_url}</b>", subtitle_style
     ))
     story.append(Spacer(1, 5))
     story.append(HRFlowable(width="100%", thickness=1.5, color=ACCENT_BLUE, spaceAfter=6))
@@ -401,17 +406,17 @@ def build_architecture_pdf():
 
     story.append(Paragraph("6. Production Cyber Security & Ephemeral Storage", h1_style))
     sec_data = [
-        [Paragraph("Security Layer", table_header_style), Paragraph("Mitigation Strategy", table_header_style)],
-        [Paragraph("<b>Prompt Injection</b>", table_cell_bold), Paragraph("Scans adversarial patterns; wraps user docs in <code>&lt;untrusted_documentation&gt;</code> with instruction-neutralizing directives.", table_cell_style)],
-        [Paragraph("<b>SQL Injection (SQLi)</b>", table_cell_bold), Paragraph("All ClickHouse queries use parameterized query dictionaries (<code>%(session_id)s</code>) with integer bounds.", table_cell_style)],
-        [Paragraph("<b>Path Traversal</b>", table_cell_bold), Paragraph("<code>_safe_resolve()</code> rejects <code>..</code>, <code>/</code>, or <code>\\</code>; verifies <code>is_relative_to(base_dir)</code>.", table_cell_style)],
-        [Paragraph("<b>Upload Hardening</b>", table_cell_bold), Paragraph("Magic-byte container header verification (MP4, WebM) with a 500 MB streaming ceiling.", table_cell_style)],
-        [Paragraph("<b>Ephemeral Storage</b>", table_cell_bold), Paragraph("Automated sweep deletes video files older than 24 hours to prevent disk bloat; persists lightweight JSON states.", table_cell_style)]
+        [Paragraph("Security Layer", table_header_style), Paragraph("Defense Mechanism & Implementation", table_header_style)],
+        [Paragraph("<b>Indirect Injection Defense</b>", table_cell_bold), Paragraph("Sanitization filters strip instruction overrides. README documentation is isolated within <code>&lt;untrusted_documentation&gt;</code> wrappers with strict system directives.", table_cell_style)],
+        [Paragraph("<b>Path Traversal Immunity</b>", table_cell_bold), Paragraph("<code>_safe_resolve()</code> enforces strict folder boundaries, stripping <code>..</code>, forward/backward slashes, and regex-validating upload identifiers.", table_cell_style)],
+        [Paragraph("<b>SQL Injection Immunity</b>", table_cell_bold), Paragraph("All ClickHouse queries use parameterized bindings (<code>%(session_id)s</code>) with strict type coercion and integer bounds checking.", table_cell_style)],
+        [Paragraph("<b>Anonymous User Isolation</b>", table_cell_bold), Paragraph("Clients generate an anonymous UUID stored in IndexedDB. Backend hashes this with SHA-256 + salt; all job queries enforce user ownership.", table_cell_style)],
+        [Paragraph("<b>Bring Your Own Key (BYOK)</b>", table_cell_bold), Paragraph("Client API keys are kept in browser <code>localStorage</code> and passed in transient headers, never persisted to server disk or database.", table_cell_style)],
+        [Paragraph("<b>Production Security Headers</b>", table_cell_bold), Paragraph("ASGI middleware injects <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code>, and CSP headers.", table_cell_style)],
     ]
-
-    t_sec = Table(sec_data, colWidths=[120, 420])
+    t_sec = Table(sec_data, colWidths=[140, 400])
     t_sec.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#991B1B")),
+        ('BACKGROUND', (0, 0), (-1, 0), BG_LIGHT),
         ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, BG_LIGHT]),
         ('TOPPADDING', (0, 0), (-1, -1), 2.5),
@@ -422,12 +427,12 @@ def build_architecture_pdf():
 
     story.append(Paragraph("7. Production VPS Deployment & Dual Verification Matrix", h1_style))
     story.append(Paragraph(
-        "<b>Hostinger Cloud VPS (2 vCPU / 8 GB RAM):</b> Nginx reverse proxy routes <code>frame-talk.taskmind-ai.com</code> to FastAPI (port 8000) "
-        "and <code>grafana.taskmind-ai.com</code> to Grafana (port 3004). Docker Compose runs ClickHouse (1.5 GB limit, bound to <code>127.0.0.1:8123</code>) "
+        f"<b>Production Deployment:</b> Nginx reverse proxy routes <code>{config.app_url}</code> to FastAPI (port 8000) "
+        f"and <code>{config.grafana_url}</code> to Grafana (port 3004). Docker Compose runs ClickHouse (1.5 GB limit, bound to <code>127.0.0.1:8123</code>) "
         "and Grafana (512 MB limit with anonymous viewer access).<br/><br/>"
         "<b>Verification Matrix:</b><br/>"
         "• <b>3-Tier AI Evals (<code>server/evals/</code>):</b> Benchmarks entity recall (&ge; 70%), causality (&ge; 85%), and QA discrimination.<br/>"
-        "• <b>Automated Unit Tests (<code>tests/</code>):</b> 21 zero-dependency unit tests running in <b>0.54 seconds</b> (<code>python -m unittest discover tests -v</code>).",
+        "• <b>Automated Unit Tests (<code>tests/</code>):</b> 27 zero-dependency unit tests running in <b>0.58 seconds</b> (<code>python -m unittest discover tests -v</code>).",
         body_style
     ))
 

@@ -15,11 +15,14 @@ import logging
 import subprocess
 from typing import List, Dict, Any, Optional
 
+from server.core.agent_builder import get_genai_client
+from server.core.config import config
+
 logger = logging.getLogger("frametalk.agent.ingestion")
 
 class IngestionAgent:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        self.api_key = api_key or config.get_server_api_key()
 
     def analyze_screencast(
         self,
@@ -32,8 +35,8 @@ class IngestionAgent:
         Multimodal video analysis: parses video file and cross-references README.
         Returns a list of structured Visual Scenes with millisecond precision.
         """
-        active_key = api_key or self.api_key
-        if not active_key:
+        active_key = api_key or self.api_key or config.get_server_api_key()
+        if not active_key and not config.vertex_ai_enabled:
             raise ValueError("No Gemini API key provided. Please configure your API key in Frame Talk.")
 
         from server.core.guardrails import sanitize_and_inspect_text, wrap_with_isolation_boundary
@@ -133,83 +136,62 @@ REFINEMENT INSTRUCTIONS:
 
     def _call_gemini_multimodal(self, video_path: str, prompt: str, api_key: str, video_duration_sec: float) -> str:
         """
-        Uploads video to Gemini File API, waits for ACTIVE state, and analyzes with gemini-3.7-flash.
+        Uploads video to Google Cloud Gemini File API, waits for ACTIVE state, and analyzes with gemini-3.7-flash.
+        Supports both Google Cloud Vertex AI and Google AI Studio modes.
         """
-        if api_key.startswith("AIzaSy") or not api_key.startswith("sk-or"):
-            from google import genai
-            from google.genai import types
-            client = genai.Client(api_key=api_key)
-            logger.info(f"Uploading video {video_path} to Gemini File API...")
-            video_file = client.files.upload(file=video_path)
-            logger.info(f"Uploaded file {video_file.name}. Polling until ACTIVE...")
+        from google.genai import types
+        client = get_genai_client(api_key)
 
-            # Poll for ACTIVE state
-            max_wait = 180
-            elapsed = 0
-            while elapsed < max_wait:
-                file_status = client.files.get(name=video_file.name)
-                state_name = getattr(file_status.state, "name", str(file_status.state))
-                logger.info(f"Gemini File state: {state_name} ({elapsed}s elapsed)")
-                if state_name == "ACTIVE":
-                    video_file = file_status
-                    break
-                elif state_name == "FAILED":
-                    raise RuntimeError(f"Gemini File API processing failed for {video_path}")
-                time.sleep(3)
-                elapsed += 3
+        logger.info(f"Uploading video {video_path} to Gemini File API...")
+        video_file = client.files.upload(file=video_path)
+        logger.info(f"Uploaded file {video_file.name}. Polling until ACTIVE...")
 
-            logger.info("Generating content with gemini-3.7-flash directly on video tokens (JSON forced)...")
-            response = client.models.generate_content(
-                model='gemini-3.7-flash',
-                contents=[video_file, prompt],
-                config=types.GenerateContentConfig(response_mime_type="application/json")
+        # Poll for ACTIVE state
+        max_wait = config.file_processing_wait_max_sec
+        elapsed = 0
+        while elapsed < max_wait:
+            file_status = client.files.get(name=video_file.name)
+            state_name = getattr(file_status.state, "name", str(file_status.state))
+            logger.info(f"Gemini File state: {state_name} ({elapsed}s elapsed)")
+            if state_name == "ACTIVE":
+                video_file = file_status
+                break
+            elif state_name == "FAILED":
+                raise RuntimeError(f"Gemini File API processing failed for {video_path}")
+            time.sleep(3)
+            elapsed += 3
+
+        logger.info("Generating content with gemini-3.7-flash directly on video tokens (JSON forced)...")
+        response = client.models.generate_content(
+            model=config.vision_model,
+            contents=[video_file, prompt],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        # Log telemetry
+        try:
+            p_tok = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
+            c_tok = getattr(response.usage_metadata, "candidates_token_count", 0) if hasattr(response, "usage_metadata") else 0
+            from server.core.pricing import calculate_llm_cost
+            cost = calculate_llm_cost(config.vision_model, p_tok, c_tok)
+            from server.repositories.telemetry_repository import telemetry_repository
+            telemetry_repository.log_llm_call(
+                session_id=os.path.basename(video_path),
+                agent_name="DirectorIngestionAgent",
+                model_name=config.vision_model,
+                prompt_tokens=p_tok,
+                completion_tokens=c_tok,
+                total_tokens=p_tok + c_tok,
+                cost_usd=cost,
+                latency_ms=int(elapsed * 1000)
             )
-            # Log telemetry
-            try:
-                p_tok = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
-                c_tok = getattr(response.usage_metadata, "candidates_token_count", 0) if hasattr(response, "usage_metadata") else 0
-                from server.core.pricing import calculate_llm_cost
-                cost = calculate_llm_cost("gemini-3.7-flash", p_tok, c_tok)
-                from server.repositories.telemetry_repository import telemetry_repository
-                telemetry_repository.log_llm_call(
-                    session_id=os.path.basename(video_path),
-                    agent_name="IngestionAgent",
-                    model_name="gemini-3.7-flash",
-                    prompt_tokens=p_tok,
-                    completion_tokens=c_tok,
-                    total_tokens=p_tok + c_tok,
-                    cost_usd=cost,
-                    latency_ms=int(elapsed * 1000)
-                )
-            except Exception as tel_err:
-                logger.warning(f"Telemetry logging failed: {tel_err}")
-            return response.text
-
-        # OpenRouter fallback
-        import requests
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        body = {
-            "model": "google/gemini-3.7-flash",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"{prompt}\n[Video processed: {os.path.basename(video_path)}, {video_path}]"
-                }
-            ],
-            "response_format": {"type": "json_object"}
-        }
-        resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=body, timeout=90)
-        if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
-        raise RuntimeError(f"API returned HTTP {resp.status_code}: {resp.text}")
+        except Exception as tel_err:
+            logger.warning(f"Telemetry logging failed: {tel_err}")
+        return response.text
 
     def _call_gemini_with_sampled_frames(self, video_path: str, prompt: str, api_key: str, duration_sec: float) -> str:
         """
         Extracts representative high-resolution frames using FFmpeg across the video
-        and sends them as image parts to gemini-3.7-flash.
+        and sends them as image parts to gemini-3.7-flash (Vertex AI / Google GenAI).
         """
         logger.info(f"Extracting sample frames from {video_path} with FFmpeg...")
         num_frames = min(12, max(5, int(duration_sec // 15)))
@@ -217,7 +199,6 @@ REFINEMENT INSTRUCTIONS:
         temp_dir = os.path.join(os.path.dirname(video_path), "temp_frames")
         os.makedirs(temp_dir, exist_ok=True)
 
-        contents = []
         frame_paths = []
 
         try:
@@ -235,44 +216,23 @@ REFINEMENT INSTRUCTIONS:
                 if os.path.exists(frame_file):
                     frame_paths.append((timestamp, frame_file))
 
-            if api_key.startswith("AIzaSy") or not api_key.startswith("sk-or"):
-                from google import genai
-                from google.genai import types
-                client = genai.Client(api_key=api_key)
-                uploaded_parts = []
-                for ts, fp in frame_paths:
-                    with open(fp, "rb") as f:
-                        img_bytes = f.read()
-                    uploaded_parts.append(f"Screen capture at {self._format_time(ts)}:")
-                    uploaded_parts.append(types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"))
+            from google.genai import types
+            client = get_genai_client(api_key)
+            uploaded_parts = []
+            for ts, fp in frame_paths:
+                with open(fp, "rb") as f:
+                    img_bytes = f.read()
+                uploaded_parts.append(f"Screen capture at {self._format_time(ts)}:")
+                uploaded_parts.append(types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"))
 
-                uploaded_parts.append(prompt)
-                logger.info(f"Calling gemini-3.7-flash with {len(frame_paths)} extracted video frames (JSON forced)...")
-                resp = client.models.generate_content(
-                    model='gemini-3.7-flash',
-                    contents=uploaded_parts,
-                    config=types.GenerateContentConfig(response_mime_type="application/json")
-                )
-                return resp.text
-            else:
-                # OpenRouter multimodal image content
-                import requests
-                content_list = [{"type": "text", "text": prompt}]
-                for ts, fp in frame_paths:
-                    with open(fp, "rb") as f:
-                        b64 = base64.b64encode(f.read()).decode('utf-8')
-                    content_list.append({"type": "text", "text": f"Screen capture at timestamp {self._format_time(ts)}:"})
-                    content_list.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
-
-                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-                body = {
-                    "model": "google/gemini-3.7-flash",
-                    "messages": [{"role": "user", "content": content_list}]
-                }
-                resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=body, timeout=90)
-                if resp.status_code == 200:
-                    return resp.json()["choices"][0]["message"]["content"]
-                raise RuntimeError(f"OpenRouter returned {resp.status_code}: {resp.text}")
+            uploaded_parts.append(prompt)
+            logger.info(f"Calling gemini-3.7-flash with {len(frame_paths)} extracted video frames (JSON forced)...")
+            resp = client.models.generate_content(
+                model=config.vision_model,
+                contents=uploaded_parts,
+                config=types.GenerateContentConfig(response_mime_type="application/json")
+            )
+            return resp.text
 
         finally:
             for _, fp in frame_paths:
