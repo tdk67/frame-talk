@@ -219,6 +219,18 @@ class AppConfig:
     def max_hosted_cost_per_user_usd(self) -> float:
         return float(os.getenv("MAX_HOSTED_COST_PER_USER_USD", self._data.get("quota", {}).get("max_hosted_cost_per_user_usd", 1.00)))
 
+    @property
+    def global_daily_max_hosted_videos(self) -> int:
+        return int(os.getenv("GLOBAL_DAILY_MAX_HOSTED_VIDEOS", self._data.get("quota", {}).get("global_daily_max_hosted_videos", 50)))
+
+    @property
+    def global_daily_max_hosted_cost_usd(self) -> float:
+        return float(os.getenv("GLOBAL_DAILY_MAX_HOSTED_COST_USD", self._data.get("quota", {}).get("global_daily_max_hosted_cost_usd", 5.00)))
+
+    @property
+    def session_secret_key(self) -> str:
+        return os.getenv("SESSION_SECRET_KEY", self._data.get("session_secret_key", "frametalk_hmac_secret_cinema_2026"))
+
     def get_server_api_key(self) -> str:
         """Returns the server-configured Gemini/Google API key if set."""
         return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""

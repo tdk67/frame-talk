@@ -89,5 +89,68 @@ class TestQuotaService(unittest.TestCase):
         self.assertTrue(allowed_byok)
         self.assertFalse(status_byok["is_quota_exhausted"])
 
+    def test_ip_bound_quota_blocks_multiple_spoofed_user_ids(self):
+        """Attacker generating different user IDs from the same IP is still capped at 3 videos."""
+        ip_hash = "ip_attacker_subnet"
+
+        # User 1 from this IP
+        self.service.record_usage(user_hash="user_spoof_1", ip_hash=ip_hash, has_custom_key=False)
+        # User 2 from this IP
+        self.service.record_usage(user_hash="user_spoof_2", ip_hash=ip_hash, has_custom_key=False)
+        # User 3 from this IP
+        self.service.record_usage(user_hash="user_spoof_3", ip_hash=ip_hash, has_custom_key=False)
+
+        # User 4 (Fresh ID) from the same IP -> must be BLOCKED by IP quota
+        allowed, err_msg, status = self.service.check_quota(
+            user_hash="user_spoof_4",
+            ip_hash=ip_hash,
+            has_custom_key=False,
+            has_user_id=True
+        )
+        self.assertFalse(allowed)
+        self.assertIn("IP Quota Limit Reached", err_msg)
+        self.assertTrue(status["is_quota_exhausted"])
+
+    def test_global_daily_circuit_breaker(self):
+        """Platform-wide expenditure caps hosted key runs when global limit is reached."""
+        from server.core.config import config
+        max_global = config.global_daily_max_hosted_videos
+
+        # Simulate reaching the global daily cap
+        self.service._memory_cache["global_daily"]["videos_count"] = max_global
+
+        allowed, err_msg, status = self.service.check_quota(
+            user_hash="fresh_legit_user",
+            ip_hash="fresh_ip",
+            has_custom_key=False,
+            has_user_id=True
+        )
+        self.assertFalse(allowed)
+        self.assertTrue(status.get("circuit_breaker_tripped", False))
+        self.assertIn("Platform Daily Limit Reached", err_msg)
+
+    def test_user_token_cryptographic_verification(self):
+        """HMAC-SHA256 user ID checksum detects and rejects forged tokens."""
+        from server.core.user_token import sign_user_id, verify_user_id
+
+        # Valid signed token
+        signed_id = sign_user_id()
+        is_valid, base_id = verify_user_id(signed_id)
+        self.assertTrue(is_valid)
+        self.assertTrue(signed_id.startswith("usr_"))
+        self.assertIn(".", signed_id)
+
+        # Forged token (tampered signature)
+        parts = signed_id.split(".", 1)
+        forged_sig = "a" * len(parts[1])
+        tampered_id = f"{parts[0]}.{forged_sig}"
+        is_valid_tampered, _ = verify_user_id(tampered_id)
+        self.assertFalse(is_valid_tampered)
+
+        # Arbitrary random string without checksum
+        self.assertFalse(verify_user_id("usr_random_attacker_id")[0])
+        self.assertFalse(verify_user_id("")[0])
+        self.assertFalse(verify_user_id(None)[0])
+
 if __name__ == "__main__":
     unittest.main()

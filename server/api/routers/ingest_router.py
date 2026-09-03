@@ -60,7 +60,13 @@ async def analyze_video(
     from server.services.quota_service import quota_service
     has_custom_key = bool(api_key and api_key.strip())
     has_user_id = getattr(request.state, "has_user_id", False)
-    allowed, err_msg, quota_info = quota_service.check_quota(user_hash=user_hash, has_custom_key=has_custom_key, has_user_id=has_user_id)
+    ip_hash = getattr(request.state, "ip_hash", None)
+    allowed, err_msg, quota_info = quota_service.check_quota(
+        user_hash=user_hash,
+        ip_hash=ip_hash,
+        has_custom_key=has_custom_key,
+        has_user_id=has_user_id
+    )
     if not allowed:
         from fastapi import HTTPException
         status_code = 401 if not has_user_id and not has_custom_key else 429
@@ -75,7 +81,7 @@ async def analyze_video(
         )
 
     job_repository.create_job(job_id=job_id, user_hash=user_hash)
-    quota_service.record_usage(user_hash=user_hash, has_custom_key=has_custom_key)
+    quota_service.record_usage(user_hash=user_hash, ip_hash=ip_hash, has_custom_key=has_custom_key)
     
     # Log user activity event
     telemetry_repository.log_user_activity(

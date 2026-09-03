@@ -6,7 +6,7 @@ Adheres strictly to the hexagonal architecture with zero hardcoded file content 
 """
 
 from pathlib import Path
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, Request
 from fastapi.responses import PlainTextResponse
 from server.core.config import config
 
@@ -59,3 +59,20 @@ def get_llms_full_txt():
     if not content:
         return PlainTextResponse("# Frame Talk Full Architecture Guide\n", status_code=200)
     return PlainTextResponse(_interpolate_domain(content), media_type="text/plain")
+
+@router.get("/api/auth/session")
+def get_or_create_session(request: Request):
+    """
+    Returns a cryptographically signed session User ID (usr_<timestamp>_<nonce>.<hmac_sig>).
+    Clients attach this in X-FrameTalk-User-Id to authenticate their demo session.
+    """
+    from server.core.user_token import sign_user_id, verify_user_id
+    existing_id = request.headers.get("x-frametalk-user-id")
+    if existing_id:
+        is_valid, _ = verify_user_id(existing_id)
+        if is_valid:
+            return {"user_id": existing_id, "signature_valid": True, "status": "active"}
+
+    signed_id = sign_user_id()
+    return {"user_id": signed_id, "signature_valid": True, "status": "issued"}
+

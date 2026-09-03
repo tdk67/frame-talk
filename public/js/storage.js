@@ -104,9 +104,22 @@ async function getUserId() {
         }
     }
 
-    // 3. Generate new if first visit
-    if (!id) {
-        id = generateSecureUserId();
+    // 3. Obtain cryptographically signed session token from server if missing or unsigned
+    if (!id || !id.includes('.')) {
+        try {
+            const resp = await fetch('/api/auth/session');
+            if (resp.ok) {
+                const sessionData = await resp.json();
+                if (sessionData.user_id) {
+                    id = sessionData.user_id;
+                }
+            }
+        } catch (e) {
+            // fallback in offline environments
+        }
+        if (!id) {
+            id = generateSecureUserId();
+        }
         await saveIdToIndexedDB(id);
         if (window.localStorage) {
             try {

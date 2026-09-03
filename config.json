@@ -36,8 +36,11 @@
   },
   "quota": {
     "max_hosted_videos_per_user": 3,
-    "max_hosted_cost_per_user_usd": 1.00
+    "max_hosted_cost_per_user_usd": 1.00,
+    "global_daily_max_hosted_videos": 50,
+    "global_daily_max_hosted_cost_usd": 5.00
   },
+  "session_secret_key": "frametalk_hmac_secret_cinema_2026",
   "storage": {
     "uploads_dir": "uploads",
     "output_dir": "output",

@@ -206,5 +206,23 @@ class TestApiRoutes(unittest.TestCase):
         # Should NOT fail with 401 Missing User ID
         self.assertNotEqual(response.status_code, 401)
 
+    def test_auth_session_issuance(self):
+        """Verify /api/auth/session issues cryptographically signed session tokens."""
+        response = self.client.get("/api/auth/session")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get("signature_valid"))
+        user_id = data.get("user_id")
+        self.assertTrue(user_id.startswith("usr_"))
+        self.assertIn(".", user_id)
+
+        # Using this signed token passes user ID verification
+        res_voice = self.client.post(
+            "/api/test-voice",
+            json={"voice_name": "Puck", "text": "Hello"},
+            headers={"X-FrameTalk-User-Id": user_id}
+        )
+        self.assertNotEqual(res_voice.status_code, 401)
+
 if __name__ == "__main__":
     unittest.main()
