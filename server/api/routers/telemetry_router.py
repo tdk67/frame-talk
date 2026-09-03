@@ -3,7 +3,7 @@ Telemetry & Health API Router
 """
 
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from server.models.schemas import HealthResponse
 from server.repositories.telemetry_repository import telemetry_repository
 from server.core.config import config
@@ -90,7 +90,7 @@ import urllib.request
 import urllib.parse
 import json
 import asyncio
-from fastapi import Request
+
 
 def mask_api_key(raw: str) -> str:
     if not raw: return ""
