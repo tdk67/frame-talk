@@ -189,7 +189,6 @@ python -m server.evals.eval_1_video_analyzer --live
 | **Stage 2: Dialogue Script** | $\ge 80/100$ | **95/100** | Visual scene anchoring, README concept grounding, 100% anti-timestamp pass rate. |
 | **Stage 3: QA Auditor** | $100/100$ | **100/100** | Dual-battery discrimination (positive benchmark pass + 100% defect injection catch). |
 | **Stage 4: GCP Director Agent** | $\ge 80/100$ | **94/100** | ADK v2.7.1 Director execution, anti-prompt injection scope lock, and Chronos dynamic hold. |
-| **Stage 3: QA Auditor** | $100/100$ | Dual-battery discrimination (positive benchmark pass + 100% defect injection catch). |
 
 Full methodology, metrics, and ground-truth schemas are documented in [**`TEST_PLAN.md`**](TEST_PLAN.md).
 

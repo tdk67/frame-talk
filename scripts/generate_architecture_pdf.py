@@ -384,16 +384,13 @@ def build_architecture_pdf():
     story.append(Spacer(1, 4))
 
     ch_data = [
-        [Paragraph("Column Name", table_header_style), Paragraph("Type", table_header_style), Paragraph("Observability Purpose", table_header_style)],
-        [Paragraph("<code>event_time</code>", table_cell_bold), Paragraph("DateTime64(3)", table_cell_style), Paragraph("Precise millisecond timestamp of synthesis.", table_cell_style)],
-        [Paragraph("<code>session_id</code>", table_cell_bold), Paragraph("String", table_cell_style), Paragraph("UUID / video hash grouping all turns in the episode.", table_cell_style)],
-        [Paragraph("<code>turn_index</code>", table_cell_bold), Paragraph("UInt16", table_cell_style), Paragraph("Sequential order of dialogue turns.", table_cell_style)],
-        [Paragraph("<code>audio_duration_ms</code>", table_cell_bold), Paragraph("UInt32", table_cell_style), Paragraph("Exact speech length computed from 24 kHz PCM.", table_cell_style)],
-        [Paragraph("<code>required_freeze_ms</code>", table_cell_bold), Paragraph("UInt32", table_cell_style), Paragraph("Timeline extension injected by FFmpeg.", table_cell_style)],
-        [Paragraph("<code>accumulated_drift_ms</code>", table_cell_bold), Paragraph("Int32", table_cell_style), Paragraph("Running offset between audio and native video speed.", table_cell_style)]
+        [Paragraph("Table Name", table_header_style), Paragraph("Key Columns & Schema", table_header_style), Paragraph("Observability Purpose", table_header_style)],
+        [Paragraph("<code>castops.sync_events</code>", table_cell_bold), Paragraph("<code>event_time, speaker, dialogue_text, audio_duration_ms, required_freeze_ms, accumulated_drift_ms</code>", table_cell_style), Paragraph("Tracks timeline freeze offsets and audio-video lockstep per dialogue turn.", table_cell_style)],
+        [Paragraph("<code>castops.llm_calls</code>", table_cell_bold), Paragraph("<code>call_time, model_name, agent_name, prompt_tokens, cached_tokens, completion_tokens, cost_usd</code>", table_cell_style), Paragraph("Tracks granular model telemetry, latencies, and 75% Google prompt cache discounts.", table_cell_style)],
+        [Paragraph("<code>castops.user_activity</code>", table_cell_bold), Paragraph("<code>event_time, user_hash, action_type, session_id</code>", table_cell_style), Paragraph("GDPR-compliant zero-PII conversion funnel (VIDEO_ANALYZED -> SCRIPT -> AUDIO).", table_cell_style)]
     ]
 
-    t_ch = Table(ch_data, colWidths=[120, 100, 320])
+    t_ch = Table(ch_data, colWidths=[125, 235, 180])
     t_ch.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4A1D96")),
         ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
@@ -408,6 +405,7 @@ def build_architecture_pdf():
     sec_data = [
         [Paragraph("Security Layer", table_header_style), Paragraph("Defense Mechanism & Implementation", table_header_style)],
         [Paragraph("<b>Indirect Injection Defense</b>", table_cell_bold), Paragraph("Sanitization filters strip instruction overrides. README documentation is isolated within <code>&lt;untrusted_documentation&gt;</code> wrappers with strict system directives.", table_cell_style)],
+        [Paragraph("<b>Anti-Injection Scope Lock</b>", table_cell_bold), Paragraph("Hardened system instructions in Google ADK agent.py enforce explicit refusal (<code>ACCESS DENIED</code>) on jailbreak attempts.", table_cell_style)],
         [Paragraph("<b>Path Traversal Immunity</b>", table_cell_bold), Paragraph("<code>_safe_resolve()</code> enforces strict folder boundaries, stripping <code>..</code>, forward/backward slashes, and regex-validating upload identifiers.", table_cell_style)],
         [Paragraph("<b>SQL Injection Immunity</b>", table_cell_bold), Paragraph("All ClickHouse queries use parameterized bindings (<code>%(session_id)s</code>) with strict type coercion and integer bounds checking.", table_cell_style)],
         [Paragraph("<b>Anonymous User Isolation</b>", table_cell_bold), Paragraph("Clients generate an anonymous UUID stored in IndexedDB. Backend hashes this with SHA-256 + salt; all job queries enforce user ownership.", table_cell_style)],
@@ -431,8 +429,8 @@ def build_architecture_pdf():
         f"and <code>{config.grafana_url}</code> to Grafana (port 3004). Docker Compose runs ClickHouse (1.5 GB limit, bound to <code>127.0.0.1:8123</code>) "
         "and Grafana (512 MB limit with anonymous viewer access).<br/><br/>"
         "<b>Verification Matrix:</b><br/>"
-        "• <b>3-Tier AI Evals (<code>server/evals/</code>):</b> Benchmarks entity recall (&ge; 70%), causality (&ge; 85%), and QA discrimination.<br/>"
-        "• <b>Automated Unit Tests (<code>tests/</code>):</b> 27 zero-dependency unit tests running in <b>0.58 seconds</b> (<code>python -m unittest discover tests -v</code>).",
+        "• <b>4-Tier AI Evals (<code>server/evals/</code>):</b> Benchmarks entity recall (&ge; 70%), causality (&ge; 85%), QA discrimination, and GCP Director Agent execution (<b>Score: 94/100</b>).<br/>"
+        "• <b>Automated Unit Tests & Quality Gates:</b> 37 zero-dependency unit tests running in <b>0.68 seconds</b> with automated HTML DOM stack balancing and git pre-commit hooks.",
         body_style
     ))
 
