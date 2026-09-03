@@ -43,3 +43,11 @@ screencaptures/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Temporary Demo & Screencast Recording Scripts & Mocks
+scripts/record_*.py
+scripts/generate_podcast_*.py
+scripts/produce_*.py
+public/gcp-studio.html
+public/grafana-dashboard.html
+public/images/
