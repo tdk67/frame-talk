@@ -91,6 +91,24 @@ python -m server.evals.run_all_evals --all
 
 ---
 
+## 🧪 Automated Unit Test Suite (`tests/`)
+
+In addition to LLM model evaluations, Frame Talk includes a fast, zero-dependency unit test suite covering application code, synchronization math, API contracts, security guardrails, and repositories:
+
+```bash
+# Run all unit tests (21 tests, executes in ~0.5s):
+python -m unittest discover tests -v
+```
+
+| Test Module | Coverage | Status |
+| :--- | :--- | :--- |
+| [`tests/test_api_routes.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_api_routes.py) | Health endpoint, BYOK validation, 404 handlers, HTTP security headers (`X-Content-Type-Options`, `X-Frame-Options`), ClickHouse event endpoints | **PASS** (8/8) |
+| [`tests/test_chronos_engine.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_chronos_engine.py) | 24 kHz PCM duration math ($48\text{ bytes/ms}$), dynamic freeze calculations, $+300\text{ms}$ visual buffer holds, multi-scene timeline chaining | **PASS** (4/4) |
+| [`tests/test_repositories.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_repositories.py) | `JobRepository` lifecycle (PENDING -> COMPLETED), path traversal blocking, `FileRepository` validation, in-memory telemetry buffering | **PASS** (5/5) |
+| [`tests/test_security_guardrails.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte container header validation | **PASS** (4/4) |
+
+---
+
 ## 📋 End-to-End Functional Test Matrix
 
 | Step | Feature | Test Action | Expected Result | Pass/Fail |
