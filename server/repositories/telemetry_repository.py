@@ -38,6 +38,9 @@ class TelemetryRepository:
     def log_user_activity(self, user_hash: str, action_type: str, session_id: str = "", metadata: str = "") -> Dict[str, Any]:
         return self._logger.log_user_activity(user_hash=user_hash, action_type=action_type, session_id=session_id, metadata=metadata)
 
+    def log_agent_callback(self, session_id: str, tool_name: str, session_source: str = "agent_engine", metadata: str = "") -> Dict[str, Any]:
+        return self._logger.log_agent_callback(session_id=session_id, tool_name=tool_name, session_source=session_source, metadata=metadata)
+
     def get_user_activities(self, limit: int = 50, user_hash: Optional[str] = None) -> List[Dict[str, Any]]:
         return self._logger.get_user_activities(limit=limit, user_hash=user_hash)
 
@@ -45,3 +48,4 @@ class TelemetryRepository:
         return self._logger.get_user_statistics_summary()
 
 telemetry_repository = TelemetryRepository()
+

@@ -143,6 +143,7 @@ class ClickHouseLogger:
         if not dialogue_text and "event_type" in kwargs:
             dialogue_text = f"MCP Event: {kwargs['event_type']}"
         now = datetime.now(timezone.utc)
+        session_source = str(kwargs.get("session_source") or kwargs.get("source") or "pipeline")
         event_dict = {
             "event_time": now.isoformat(),
             "session_id": session_id,
@@ -157,7 +158,8 @@ class ClickHouseLogger:
             "required_freeze_ms": required_freeze_ms,
             "accumulated_drift_ms": accumulated_drift_ms,
             "pacing_status": pacing_status,
-            "token_cost": token_cost
+            "token_cost": token_cost,
+            "session_source": session_source
         }
 
         # Store in memory for instant API observability queries
@@ -421,6 +423,22 @@ class ClickHouseLogger:
         if len(_in_memory_user_activities) > 10000:
             _in_memory_user_activities.pop(0)
         return record
+
+    def log_agent_callback(self,
+                           session_id: str,
+                           tool_name: str,
+                           session_source: str = "agent_engine",
+                           metadata: str = "") -> Dict[str, Any]:
+        """Logs an explicit Agent Builder / ADK callback event to ClickHouse."""
+        user_hash = f"src_{session_source}"
+        action_type = "AGENT_CALLBACK_RECEIVED"
+        meta_payload = f"tool:{tool_name};src:{session_source};{metadata}".rstrip(";")
+        return self.log_user_activity(
+            user_hash=user_hash,
+            action_type=action_type,
+            session_id=session_id,
+            metadata=meta_payload
+        )
 
     def get_user_activities(self, limit: int = 50, user_hash: Optional[str] = None) -> List[Dict[str, Any]]:
         """Retrieves recent user activities."""

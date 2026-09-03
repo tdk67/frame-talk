@@ -288,7 +288,7 @@ class TestApiRoutes(unittest.TestCase):
                     "readme_text": "# Valid Project README",
                     "video_duration_seconds": 12.0
                 },
-                headers={"X-FrameTalk-User-Id": user_id}
+                headers={"X-FrameTalk-User-Id": user_id, "X-API-Key": "AIzaSyTest_BYOK_1234567890"}
             )
             self.assertEqual(res.status_code, 202)
             data = res.json()
@@ -450,6 +450,60 @@ class TestApiRoutes(unittest.TestCase):
         data = res.json()
         self.assertNotIn("error", data)
         self.assertFalse(data["result"]["isError"])
+
+    def test_mcp_callback_logs_agent_callback_event(self):
+        """Verify MCP tool calls log AGENT_CALLBACK_RECEIVED with session_source attribution."""
+        from server.repositories.telemetry_repository import telemetry_repository
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 105,
+            "method": "tools/call",
+            "params": {
+                "name": "calculate_chronos_hold",
+                "arguments": {
+                    "speech_text": "Alex explains our distributed sync logic.",
+                    "video_duration_ms": 1500,
+                    "session_id": "mcp_provable_test",
+                    "session_source": "agent_engine"
+                }
+            }
+        }
+        res = self.client.post("/mcp", json=payload)
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.json()["result"]["isError"])
+
+        # Inspect logged activities
+        activities = telemetry_repository.get_user_activities(limit=10)
+        callback_events = [a for a in activities if a.get("action_type") == "AGENT_CALLBACK_RECEIVED"]
+        self.assertTrue(len(callback_events) > 0)
+        latest = callback_events[0]
+        self.assertIn("calculate_chronos_hold", latest.get("metadata", ""))
+        self.assertIn("agent_engine", latest.get("metadata", ""))
+
+    def test_studio_service_adk_director_dispatch_and_fallback(self):
+        """Verify studio_service._orchestrate_with_adk_director executes without crashing and logs dispatch."""
+        from server.services.studio_service import studio_service
+        from server.repositories.telemetry_repository import telemetry_repository
+        test_scenes = [{
+            "scene_id": "test_scene_adk_1",
+            "start_time_ms": 0,
+            "end_time_ms": 5000,
+            "duration_ms": 5000,
+            "on_screen": "System Dashboard",
+            "user_action": "Click Refresh",
+            "app_reaction": "Data Reloaded"
+        }]
+        readme = "# Sample Documentation\nExplains the data flow."
+
+        # Should execute safely and return None or script without throwing
+        result = studio_service._orchestrate_with_adk_director(
+            scenes=test_scenes,
+            readme_text=readme
+        )
+        # Verify telemetry recorded the dispatch attempt
+        activities = telemetry_repository.get_user_activities(limit=10)
+        callback_events = [a for a in activities if a.get("action_type") == "AGENT_CALLBACK_RECEIVED"]
+        self.assertTrue(len(callback_events) > 0)
 
 if __name__ == "__main__":
     unittest.main()

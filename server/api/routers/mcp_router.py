@@ -212,12 +212,22 @@ def _handle_mcp_call_internal(method: str, params: Dict[str, Any], msg_id: Any, 
             # Chronos formula: required_freeze_ms = max(0, speech_needed - video_dur + 300ms)
             freeze_ms = max(0, est_audio_ms - video_dur_ms + 300) if est_audio_ms > video_dur_ms else 0
             
+            session_source = str(args.get("session_source") or "agent_engine")
+            session_id = str(args.get("session_id") or "mcp_chronos_session")
+            telemetry_repository.log_agent_callback(
+                session_id=session_id,
+                tool_name="calculate_chronos_hold",
+                session_source=session_source,
+                metadata=f"speech_ms:{est_audio_ms};freeze_ms:{freeze_ms}"
+            )
+
             result_payload = {
                 "speech_duration_ms": est_audio_ms,
                 "video_duration_ms": video_dur_ms,
                 "required_freeze_ms": freeze_ms,
                 "freeze_anchor_ratio": 0.70,
-                "status": "FREEZE_REQUIRED" if freeze_ms > 0 else "NO_FREEZE_NEEDED"
+                "status": "FREEZE_REQUIRED" if freeze_ms > 0 else "NO_FREEZE_NEEDED",
+                "session_source": session_source
             }
             return {
                 "jsonrpc": "2.0",
@@ -301,6 +311,15 @@ def _handle_mcp_call_internal(method: str, params: Dict[str, Any], msg_id: Any, 
                     }
                 }
 
+            session_source = str(args.get("session_source") or "agent_engine").strip()
+
+            telemetry_repository.log_agent_callback(
+                session_id=session_id,
+                tool_name="log_clickhouse_telemetry",
+                session_source=session_source,
+                metadata=f"event:{event_type};scene:{scene_id};dur:{audio_dur}"
+            )
+
             telemetry_repository.log_sync_event(
                 session_id=session_id,
                 turn_index=int(args.get("turn_index", 0)),
@@ -314,7 +333,8 @@ def _handle_mcp_call_internal(method: str, params: Dict[str, Any], msg_id: Any, 
                 required_freeze_ms=freeze_dur,
                 accumulated_drift_ms=0,
                 pacing_status="SYNCHRONIZED" if freeze_dur == 0 else "HOLD_INJECTED",
-                token_cost=0.0
+                token_cost=0.0,
+                session_source=session_source
             )
             return {
                 "jsonrpc": "2.0",
@@ -328,6 +348,15 @@ def _handle_mcp_call_internal(method: str, params: Dict[str, Any], msg_id: Any, 
         if tool_name == "audit_script_pacing":
             dialogue_text = args.get("dialogue_text", "")
             target_dur_sec = float(args.get("target_duration_sec", 5.0))
+            session_source = str(args.get("session_source") or "agent_engine")
+            session_id = str(args.get("session_id") or "mcp_audit_session")
+
+            telemetry_repository.log_agent_callback(
+                session_id=session_id,
+                tool_name="audit_script_pacing",
+                session_source=session_source,
+                metadata=f"target_dur:{target_dur_sec}"
+            )
             import re
             has_timestamps = bool(re.search(r'\b\d{1,2}:\d{2}\b', dialogue_text))
             words = len(dialogue_text.split())
