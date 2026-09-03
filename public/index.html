@@ -287,6 +287,7 @@
                 <h2>Multimodal Visual Scenes Timeline</h2>
                 <p style="color: var(--color-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
                     gemini-3.7-flash parsed your screencast pixels and mapped UI states to your README documentation.
+                </p>
                 <!-- Video Description Precision & Grounding Audit -->
                 <div id="video-eval-section" class="qa-report-card" style="display: none; margin-bottom: 1.5rem;" aria-label="Video Grounding Evaluation">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
@@ -418,7 +419,11 @@
 
                 <div class="button-group" style="margin-top: 2rem;">
                     <button class="btn btn-secondary" onclick="prevStep()">Back</button>
-                    <button class="btn btn-primary" onclick="navigateToStep(4)">Proceed            <!-- Step 4: Voice Configuration & Chronos -->
+                    <button class="btn btn-primary" onclick="navigateToStep(4)">Proceed to Voice Setup ➔</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Voice Configuration & Chronos -->
             <div id="step-card-4" class="wizard-card" role="tabpanel" tabindex="0" aria-labelledby="tab-step-4">
                 <h2>Configure Voices & Chronos Sync Engine</h2>
                 <div class="note-bubble">
