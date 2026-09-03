@@ -269,6 +269,34 @@ class TestApiRoutes(unittest.TestCase):
         post_status = quota_service.get_quota_status(user_hash=user_hash)
         self.assertEqual(post_status["videos_used"], 0)
 
+    def test_analyze_video_successful_dispatch(self):
+        """Verify that submitting a valid existing video file dispatches analysis job (202 PENDING) and logs activity without 500 error."""
+        from server.core.user_token import sign_user_id
+        from server.repositories.file_repository import file_repository
+        user_id = sign_user_id("usr_success_test_video_dispatch")
+
+        # Create a real dummy video file in uploads_dir
+        test_video_name = "test_screencast_valid.mp4"
+        dummy_file = file_repository.uploads_dir / test_video_name
+        dummy_file.write_bytes(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00isommp42")
+
+        try:
+            res = self.client.post(
+                "/api/analyze-video",
+                json={
+                    "video_filename": test_video_name,
+                    "readme_text": "# Valid Project README",
+                    "video_duration_seconds": 12.0
+                },
+                headers={"X-FrameTalk-User-Id": user_id}
+            )
+            self.assertEqual(res.status_code, 202)
+            data = res.json()
+            self.assertEqual(data.get("status"), "PENDING")
+            self.assertIn("job_id", data)
+        finally:
+            dummy_file.unlink(missing_ok=True)
+
     def test_mcp_telemetry_unauthenticated_rejected(self):
         """Verify POST /mcp log_clickhouse_telemetry without authentication returns JSON-RPC Unauthorized without HTTP 500."""
         payload = {

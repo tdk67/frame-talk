@@ -7,6 +7,7 @@ from typing import Optional
 from server.models.schemas import UploadResponse, AnalyzeRequest, AnalyzeResponse
 from server.repositories.file_repository import file_repository
 from server.repositories.job_repository import job_repository
+from server.repositories.telemetry_repository import telemetry_repository
 from server.services.studio_service import studio_service
 from server.api.dependencies import get_api_key
 
@@ -57,12 +58,13 @@ async def analyze_video(
         return {"job_id": job_id, "status": job["status"]}
 
     # 1. Validate that the video file actually exists in uploads/ BEFORE consuming quota
+    import os
     from server.repositories.file_repository import file_repository
     from server.core.exceptions import ResourceNotFoundException, InvalidInputException
     try:
-        video_path = file_repository.get_upload_path(req.video_filename)
-        if not video_path.exists() or video_path.stat().st_size == 0:
-            raise HTTPException(status_code=400, detail=f"Uploaded video file '{req.video_filename}' does not exist or is empty.")
+        video_path_str = file_repository.get_upload_path(req.video_filename)
+        if os.path.getsize(video_path_str) == 0:
+            raise HTTPException(status_code=400, detail=f"Uploaded video file '{req.video_filename}' is empty (0 bytes).")
     except (ResourceNotFoundException, InvalidInputException) as e:
         raise HTTPException(status_code=400, detail=f"Invalid video file: {str(e)}")
 
