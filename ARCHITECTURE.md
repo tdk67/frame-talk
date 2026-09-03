@@ -174,7 +174,7 @@ flowchart TD
 1. **Model Independence:** The core Chronos sync math (`duration_ms = bytes / 48`) and pacing algorithms are completely decoupled from Google Gemini. Any multimodal vision model or TTS engine conforming to `ModelProviderPort` can be swapped in without modifying synchronization logic.
 2. **Resilient Observability Fallback:** If ClickHouse is offline, `TimeSeriesLoggingPort` automatically switches to an in-memory ring buffer (`_in_memory_events`) so the studio never crashes or blocks rendering.
 3. **Pluggable Persistence:** Storage operates behind `FileStoragePort` and `JobStatePort`. The current local filesystem adapter can be replaced with AWS S3, Google Cloud Storage, or Redis by implementing the port interface.
-4. **Deterministic Testing:** Inbound and Outbound ports allow the entire 51-test unit test suite (`tests/`) to run against mock adapters in $< 1.5$ seconds without incurring API costs.
+4. **Deterministic Testing:** Inbound and Outbound ports allow the entire 54-test unit test suite (`tests/`) to run against mock adapters in $< 1.5$ seconds without incurring API costs.
 
 ---
 
@@ -360,7 +360,7 @@ The engine is backed by a dual verification architecture and continuous quality 
    - **Stage 2 (Scriptwriting):** Anchor accuracy, README grounding, 100% anti-timestamp pass rate.
    - **Stage 3 (QA Audit):** Dual-battery discrimination (positive benchmark pass + 100% defect catch).
    - **Stage 4 (GCP Director Agent):** ADK v2.7.1 Director execution, anti-prompt injection scope lock, and Chronos hold validation (**Score: 94/100**).
-2. **Automated Unit Test Suite (`tests/`):** 51 deterministic unit tests verifying API contracts, Chronos math, HTML DOM stack balancing, repository persistence, path traversal blocking, HMAC user token checksums, IP compound quotas, secret validation, CSP/HSTS headers, and prompt injection filters in $< 1.5$ seconds.
+2. **Automated Unit Test Suite (`tests/`):** 54 deterministic unit tests verifying API contracts, Chronos math, HTML DOM stack balancing, repository persistence, path traversal blocking, HMAC user token checksums, IP compound quotas, secret validation, CSP/HSTS headers, and prompt injection filters in $< 1.5$ seconds.
    ```bash
    # Run full test suite:
    python -m unittest discover tests -v

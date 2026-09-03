@@ -6,7 +6,11 @@ Implements the JSON-RPC 2.0 MCP specification over HTTP.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+import re
+import time
+import threading
+from typing import Dict, Any, List, Optional, Tuple
+import requests
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 from server.sync.chronos_engine import chronos_engine
@@ -15,6 +19,56 @@ from server.repositories.telemetry_repository import telemetry_repository
 logger = logging.getLogger("frametalk.api.mcp")
 
 router = APIRouter(tags=["5. Model Context Protocol (MCP)"])
+
+# Google API keys always match this format; anything else is rejected without a network call.
+_GOOGLE_API_KEY_FORMAT = re.compile(r"^AIza[0-9A-Za-z_\-]{35}$")
+
+# Bounded TTL cache of live key-validation verdicts (key -> (is_valid, expires_at)).
+# Prevents an attacker from forcing unbounded validation calls against the Google API.
+_KEY_VALIDATION_TTL_SEC = 300
+_KEY_VALIDATION_CACHE_MAX = 500
+_key_validation_cache: Dict[str, Tuple[bool, float]] = {}
+_key_validation_lock = threading.Lock()
+
+
+def _validate_google_api_key(api_key: str) -> bool:
+    """
+    Live-validates a Google API key against the Gemini API (cheap models.list call).
+    Fail-closed: network errors or non-200 responses deny access. Results are
+    cached with a TTL; keys are never logged or persisted to disk.
+    """
+    if not _GOOGLE_API_KEY_FORMAT.match(api_key):
+        return False
+
+    now = time.time()
+    with _key_validation_lock:
+        cached = _key_validation_cache.get(api_key)
+        if cached and cached[1] > now:
+            return cached[0]
+
+    try:
+        resp = requests.get(
+            "https://generativelanguage.googleapis.com/v1beta/models",
+            params={"key": api_key, "pageSize": 1},
+            timeout=5,
+        )
+        verdict = resp.status_code == 200
+    except Exception as e:
+        logger.warning(f"MCP key validation failed closed (no verdict cached): {type(e).__name__}")
+        return False
+
+    with _key_validation_lock:
+        if len(_key_validation_cache) >= _KEY_VALIDATION_CACHE_MAX:
+            # Evict expired entries first; if still full, drop the oldest verdict.
+            expired = [k for k, (_, exp) in _key_validation_cache.items() if exp <= now]
+            for k in expired:
+                _key_validation_cache.pop(k, None)
+            if len(_key_validation_cache) >= _KEY_VALIDATION_CACHE_MAX:
+                oldest = min(_key_validation_cache.items(), key=lambda kv: kv[1][1])[0]
+                _key_validation_cache.pop(oldest, None)
+        _key_validation_cache[api_key] = (verdict, now + _KEY_VALIDATION_TTL_SEC)
+
+    return verdict
 
 MCP_TOOLS = [
     {
@@ -214,9 +268,7 @@ def _handle_mcp_call_internal(method: str, params: Dict[str, Any], msg_id: Any, 
                 srv_key = config.get_server_api_key()
                 if srv_key and hmac.compare_digest(api_key_val.encode("utf-8"), srv_key.encode("utf-8")):
                     is_authenticated = True
-                elif api_key_val.startswith("AIzaSy") and len(api_key_val) >= 35:
-                    is_authenticated = True
-                elif api_key_val.startswith("usr_test_") or api_key_val.startswith("test_"):
+                elif _validate_google_api_key(api_key_val):
                     is_authenticated = True
 
             if not is_authenticated:
