@@ -104,7 +104,7 @@ def validate_video_file(file_path: str, max_size_bytes: int = 500 * 1024 * 1024)
         if header.startswith(b"RIFF") and b"AVI " in header[:12]:
             return True, None
 
-        logger.warning(f"Non-standard video header in {file_path}: {header[:12]}")
-        return True, None
+        logger.warning(f"Rejected invalid video container header in {file_path}: {header[:12]}")
+        return False, "Unsupported or non-standard video container signature. Only valid MP4, WebM, MOV, and MKV files are accepted."
     except Exception as e:
         return False, f"Error validating video file header: {e}"

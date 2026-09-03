@@ -104,6 +104,9 @@ class FileRepository:
         for directory in [self.uploads_dir, self.output_dir]:
             try:
                 for file_path in directory.iterdir():
+                    # Never delete quota state or directories
+                    if file_path.name in ("user_quotas.json", ".gitkeep") or file_path.is_dir():
+                        continue
                     if file_path.is_file() and file_path.stat().st_mtime < cutoff_time:
                         file_path.unlink(missing_ok=True)
             except Exception as e:

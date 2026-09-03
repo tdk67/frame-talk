@@ -71,8 +71,12 @@ class AudioSynthEngine:
 
     def _call_tts_api(self, text: str, voice: str, speaker: str, api_key: str) -> bytes:
         import requests
-        # Direct Google Cloud Gemini TTS endpoint
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key={api_key}"
+        # Direct Google Cloud Gemini TTS endpoint (header-authenticated to prevent proxy URL leakage)
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key
+        }
         body = {
             "contents": [{"parts": [{"text": text}]}],
             "generationConfig": {
@@ -84,7 +88,7 @@ class AudioSynthEngine:
                 }
             }
         }
-        resp = requests.post(url, json=body, timeout=30)
+        resp = requests.post(url, headers=headers, json=body, timeout=30)
         if resp.status_code == 200:
             data = resp.json()
             b64 = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("inlineData", {}).get("data")

@@ -34,15 +34,24 @@ class PureASGIUserContextMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # 1. Parse headers directly from scope
+        # 1. Parse headers and client IP directly from scope
         raw_headers = dict(scope.get("headers", []))
         raw_id_bytes = raw_headers.get(b"x-frametalk-user-id", b"")
         raw_id = raw_id_bytes.decode("utf-8", errors="ignore").strip()
 
+        # Extract client IP for secure anonymous fallback (prevents quota bypass)
+        client_ip = ""
+        xff = raw_headers.get(b"x-forwarded-for", b"")
+        if xff:
+            client_ip = xff.decode("utf-8", errors="ignore").split(",")[0].strip()
+        elif scope.get("client"):
+            client_ip = str(scope["client"][0])
+
         if raw_id and _USER_ID_REGEX.match(raw_id):
             clean_id = raw_id
         else:
-            clean_id = f"anon_{uuid.uuid4().hex[:12]}"
+            ip_entropy = client_ip or "default_ephemeral_client"
+            clean_id = f"anon_ip_{hashlib.sha256(ip_entropy.encode('utf-8')).hexdigest()[:16]}"
 
         user_hash = compute_user_hash(clean_id)
 

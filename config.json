@@ -14,7 +14,7 @@
   "voices": {
     "default_male": "Puck",
     "default_female": "Kore",
-    "male_host_name": "Mark",
+    "male_host_name": "Alex",
     "female_host_name": "Sarah"
   },
   "retries": {

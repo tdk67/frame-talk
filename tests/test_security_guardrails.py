@@ -65,5 +65,17 @@ class TestSecurityGuardrails(unittest.TestCase):
         finally:
             os.unlink(tmp_path)
 
+    def test_video_validation_invalid_header(self):
+        """Verify non-video binary files (e.g. PE executables or arbitrary binary) are strictly rejected."""
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
+            f.write(b"MZ\x90\x00\x03\x00\x00\x00" + b"\x00" * 100)
+            tmp_path = f.name
+        try:
+            valid, err = validate_video_file(tmp_path)
+            self.assertFalse(valid)
+            self.assertIn("unsupported", err.lower())
+        finally:
+            os.unlink(tmp_path)
+
 if __name__ == "__main__":
     unittest.main()

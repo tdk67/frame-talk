@@ -63,35 +63,42 @@
 
     <main style="flex: 1;">
         <div class="page-container">
-            <h1>Privacy Policy (Datenschutz)</h1>
+            <h1>Privacy Policy / Datenschutzerklärung (DSGVO)</h1>
             
-            <h2>1. Data Protection at a Glance</h2>
+            <h2>1. Datenschutz auf einen Blick / Data Protection Overview</h2>
             <p>
-                We take the protection of your personal data very seriously. We treat your personal data confidentially and in accordance with the statutory data protection regulations as well as this privacy policy.
+                Wir nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften (DSGVO / BDSG) sowie dieser Datenschutzerklärung.
             </p>
             <p>
-                <strong>Bring Your Own Key (BYOK) Model</strong><br>
-                This application operates strictly on a "Bring Your Own Key" (BYOK) model. The API key you provide to access the Google Gemini API is stored <em>only locally</em> in your browser's <code>localStorage</code>. It is never transmitted to, stored on, or logged by our servers. All API requests using your key are made directly from your browser to Google, or securely proxied without storage.
-            </p>
-
-            <h2>2. General Information and Mandatory Information</h2>
-            <p>
-                <strong>Data Collection on our Website</strong><br>
-                When you use this website, certain technical data (such as your IP address, browser type, and access times) may be temporarily logged by the web server to ensure secure and stable operation.
+                <strong>Bring Your Own Key (BYOK) & Schlüsselverarbeitung</strong><br>
+                Wenn Sie einen eigenen Google Gemini API-Schlüssel hinterlegen, wird dieser primär lokal in Ihrem Browser (<code>localStorage</code>) gespeichert. Zur Durchführung der multimodalen Analyse und Sprachsynthese wird der Schlüssel verschlüsselt per HTTPS-Header (<code>X-API-Key</code>) an das Backend übertragen und dort <em>ausschließlich flüchtig im Arbeitsspeicher (in-memory)</em> für die Dauer des jeweiligen API-Aufrufs verwendet. Ihr API-Schlüssel wird <strong>niemals auf Festplatte, in persistenten Datenbanken oder in Server-Logdateien gespeichert</strong>.
             </p>
 
-            <h2>3. Third-Party Services</h2>
+            <h2>2. Rechtsgrundlagen der Verarbeitung (Art. 6 DSGVO)</h2>
             <p>
-                <strong>Google Gemini API</strong><br>
-                Because this app relies on the Google Gemini API, your prompts, uploaded screencasts, and generated audio are transmitted to Google's servers for processing. Please review <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--color-blue);">Google's Privacy Policy</a> to understand how they process your data.
+                Die Verarbeitung Ihrer Eingaben (Screencast-Dateien, Dokumentation, API-Aufrufe) erfolgt auf Grundlage von <strong>Art. 6 Abs. 1 lit. b DSGVO</strong> (Erfüllung des Nutzungsvertrages bzw. Durchführung vorvertraglicher Maßnahmen auf Ihre Anfrage) sowie <strong>Art. 6 Abs. 1 lit. f DSGVO</strong> (berechtigtes Interesse an der Gewährleistung der IT-Sicherheit, Missbrauchsprävention und Quotenverwaltung).
             </p>
 
-            <h2>4. Your Rights</h2>
+            <h2>3. Auftragsverarbeiter & Drittlandtransfer (Google Gemini API)</h2>
             <p>
-                You have the right to request information about the origin, recipient, and purpose of your stored personal data at any time, free of charge. You also have the right to request that it be corrected or deleted. If you have given your consent to data processing, you can revoke this consent at any time for the future.
+                Zur Bereitstellung der multimodalen Videoanalyse (Gemini 3.7 Flash) und Sprachgenerierung (Gemini 3.1 Flash TTS) werden die von Ihnen übermittelten Videodaten und Markdown-Dokumentationen an unseren Dienstleister übertragen:
             </p>
             <p>
-                To delete your stored API key, you can simply clear your browser's local storage or use the "Disconnect" option in the app.
+                <strong>Google Ireland Limited</strong>, Gordon House, Barrow Street, Dublin 4, Irland (Muttergesellschaft: Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA).<br>
+                Die Datenübermittlung in die USA bzw. Drittstaaten stützt sich auf die Standardvertragsklauseln der EU-Kommission (Standard Contractual Clauses - SCCs) gemäß Art. 46 DSGVO. Weitere Informationen finden Sie in der <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--color-blue);">Datenschutzerklärung von Google</a>.
+            </p>
+
+            <h2>4. Speicherdauer & Ephemere Datenlöschung</h2>
+            <p>
+                Hochgeladene Screencast-Videos und generierte Audiowiedergaben werden auf unseren Servern strikt temporär vorgehalten und über einen automatisierten Bereinigungsdienst <strong>spätestens nach 24 Stunden unwiderruflich gelöscht</strong>.
+            </p>
+
+            <h2>5. Ihre Betroffenenrechte (Art. 15–21 DSGVO)</h2>
+            <p>
+                Sie haben jederzeit im Rahmen der geltenden gesetzlichen Bestimmungen das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten (Art. 15 DSGVO), Berichtigung (Art. 16 DSGVO), Löschung (Art. 17 DSGVO), Einschränkung der Verarbeitung (Art. 18 DSGVO) sowie das Recht auf Datenübertragbarkeit (Art. 20 DSGVO) und Widerspruch (Art. 21 DSGVO).
+            </p>
+            <p>
+                Um Ihren lokal gespeicherten API-Schlüssel zu löschen, genügt ein Klick auf den Button "Disconnect" in der Menüleiste der Studio-Anwendung oder das Leeren Ihres Browser-Caches.
             </p>
         </div>
     </main>

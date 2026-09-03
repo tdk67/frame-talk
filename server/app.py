@@ -53,8 +53,8 @@ app.include_router(audio_router)
 app.include_router(telemetry_router)
 app.include_router(mcp_router)
 
-# Mount Static Directories (Uploads, Output, Public Web UI)
-app.mount("/uploads", StaticFiles(directory=str(config.uploads_dir)), name="uploads")
+# Mount Static Directories (Output media and Public Web UI)
+# Note: uploads directory is intentionally NOT mounted statically to prevent arbitrary file enumeration
 app.mount("/output", StaticFiles(directory=str(config.output_dir)), name="output")
 app.mount("/", StaticFiles(directory=str(config.public_dir), html=True), name="public")
 

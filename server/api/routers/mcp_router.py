@@ -164,11 +164,25 @@ def handle_mcp_call(method: str, params: Dict[str, Any], msg_id: Any) -> Dict[st
             }
 
         if tool_name == "log_clickhouse_telemetry":
-            session_id = args.get("session_id", "mcp_session")
-            event_type = args.get("event_type", "MCP_EVENT")
-            scene_id = args.get("scene_id", "scene_1")
+            session_id = str(args.get("session_id", "mcp_session")).strip()
+            event_type = str(args.get("event_type", "MCP_EVENT")).strip()
+            scene_id = str(args.get("scene_id", "scene_1")).strip()
             audio_dur = int(args.get("audio_duration_ms", 0))
             freeze_dur = int(args.get("freeze_injected_ms", 0))
+
+            # Input validation and bounds checking to prevent database poisoning
+            import re
+            valid_id = bool(re.match(r"^[a-zA-Z0-9_\-]{3,64}$", session_id))
+            valid_event = bool(re.match(r"^[a-zA-Z0-9_\-]{3,64}$", event_type))
+            if not valid_id or not valid_event or not (0 <= audio_dur <= 600000) or not (0 <= freeze_dur <= 600000):
+                return {
+                    "jsonrpc": "2.0",
+                    "id": msg_id,
+                    "result": {
+                        "content": [{"type": "text", "text": "Validation Error: session_id and event_type must be alphanumeric (3-64 chars) and durations within [0, 600000]ms."}],
+                        "isError": True
+                    }
+                }
 
             telemetry_repository.log_sync_event(
                 session_id=session_id,

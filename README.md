@@ -121,10 +121,10 @@ flowchart TD
 
 ### 1. Setup Python 3.12 Virtual Environment & Install Dependencies
 ```bash
-git clone https://github.com/tdk67/BlockbusterHackaton.git
-cd BlockbusterHackaton
-py -3.12 -m venv .venv
-.\.venv\Scripts\activate  # On Linux/macOS: source .venv/bin/activate
+git clone https://github.com/tdk67/frame-talk.git
+cd frame-talk
+python3 -m venv .venv  # Windows: py -3.12 -m venv .venv
+source .venv/bin/activate  # Windows: .\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -165,9 +165,9 @@ npm test
 | [`tests/test_frontend_html_integrity.py`](tests/test_frontend_html_integrity.py) | LIFO tag stack balancing, illegal nesting blocking, wizard card hierarchy anti-bleed | **2/2 PASS** |
 | [`tests/test_quota_service.py`](tests/test_quota_service.py) | Hosted demo key limits (3 videos, $1.00 USD cost cap), BYOK unlimited bypass | **4/4 PASS** |
 | [`tests/test_repositories.py`](tests/test_repositories.py) | `JobRepository` lifecycle, path traversal blocking, `FileRepository` validation | **5/5 PASS** |
-| [`tests/test_security_guardrails.py`](tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte validation | **4/4 PASS** |
+| [`tests/test_security_guardrails.py`](tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte validation | **5/5 PASS** |
 | [`tests/test_user_isolation.py`](tests/test_user_isolation.py) | Anonymous client pseudonymization, job ownership isolation, ClickHouse user aggregations | **8/8 PASS** |
-| **TOTAL** | **Comprehensive Build Integrity** | **37/37 PASS** |
+| **TOTAL** | **Comprehensive Build Integrity** | **38/38 PASS** |
 
 ### 2. Multi-Stage AI Evaluation Suite (`server/evals/`)
 Evaluates Gemini models and the Google Cloud Agent Platform Director against the reference dataset ([`server/evals/dataset/`](server/evals/dataset/)):
