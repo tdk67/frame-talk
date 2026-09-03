@@ -293,6 +293,34 @@ class TestApiRoutes(unittest.TestCase):
         self.assertEqual(data["error"]["code"], -32001)
         self.assertIn("Unauthorized", data["error"]["message"])
 
+    def test_mcp_telemetry_junk_bearer_token_rejected(self):
+        """Verify POST /mcp log_clickhouse_telemetry with junk Authorization header is rejected (anti-security-theater)."""
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 101,
+            "method": "tools/call",
+            "params": {
+                "name": "log_clickhouse_telemetry",
+                "arguments": {
+                    "session_id": "mcp_probe_test",
+                    "event_type": "PROBE_EVENT",
+                    "scene_id": "scene_1",
+                    "audio_duration_ms": 1500,
+                    "freeze_injected_ms": 300
+                }
+            }
+        }
+        res = self.client.post(
+            "/mcp",
+            json=payload,
+            headers={"Authorization": "Bearer junk-not-a-real-key"}
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"]["code"], -32001)
+        self.assertIn("Unauthorized", data["error"]["message"])
+
     def test_mcp_telemetry_authenticated_success(self):
         """Verify POST /mcp log_clickhouse_telemetry with valid session token succeeds cleanly with no HTTP 500."""
         from server.core.user_token import sign_user_id
