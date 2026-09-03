@@ -45,6 +45,7 @@ def get_agent_builder_spec() -> Dict[str, Any]:
         "runtime_mode": "Vertex AI Enterprise" if config.vertex_ai_enabled else "Google Cloud Gemini Native",
         "google_cloud_project": config.google_cloud_project,
         "google_cloud_location": config.google_cloud_location,
+        "google_cloud_agent_id": config.google_cloud_agent_id,
         "hackathon_partner_track": "ClickHouse + Grafana Labs",
         "agents": [
             {

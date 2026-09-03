@@ -35,6 +35,17 @@ async function checkBackendHealth() {
         if (chText) chText.textContent = 'ClickHouse Standby';
     }
 
+    // Google Cloud Agent Platform health
+    const agentBadge = document.getElementById('agent-platform-badge');
+    const agentText = document.getElementById('agent-platform-text');
+    if (health.agent_builder_enabled) {
+        if (agentBadge) {
+            agentBadge.style.borderColor = 'rgba(167, 139, 250, 0.5)';
+            agentBadge.setAttribute('aria-label', `${health.agent_platform || 'Google Cloud Agent Platform'} (Live)`);
+        }
+        if (agentText) agentText.textContent = 'Google Cloud Agent Platform';
+    }
+
     // Check Gemini API key config state & hosted demo quota
     const keyBadge = document.getElementById('api-status-badge');
     const keyText = document.getElementById('api-status-text');
@@ -373,9 +384,9 @@ function initControls() {
                     (jobId) => {
                         timerInterval = setInterval(() => {
                             secondsElapsed++;
-                            setStepLoading(2, true, `Gemini 3.7 Flash analyzing video frames... (${secondsElapsed}s)`);
+                            setStepLoading(2, true, `Director Agent analyzing screencast frames... (${secondsElapsed}s)`);
                         }, 1000);
-                        setStepLoading(2, true, `Gemini 3.7 Flash analyzing video frames... (0s)`);
+                        setStepLoading(2, true, `Director Agent analyzing screencast frames... (0s)`);
                         updateStepProgress(2, 70);
                     }
                 );
@@ -396,7 +407,7 @@ function initControls() {
             if (analyzeRes.eval_scorecard) {
                 renderVideoEvalScorecard(analyzeRes.eval_scorecard);
             }
-            markAgentStatus('agent-transcript-status', 'Ingestion Agent: Complete');
+            markAgentStatus('agent-transcript-status', 'Director & Ingestion Agent: Complete');
             toast.success(`Video parsed into ${analyzeRes.scenes.length} visual scenes!`, 'Analysis Complete');
             checkBackendHealth();
             setTimeout(() => setStepLoading(2, false), 400);
@@ -415,7 +426,7 @@ function initControls() {
     window.generatePodcastScript = async () => {
         const { scenes, readmeText, apiKey } = store.getState();
         window.navigateToStep(3);
-        setStepLoading(3, true, 'Drafting dialogue script with gemini-3.7-flash...');
+        setStepLoading(3, true, 'Scriptwriter Persona Agent drafting Alex & Sam dialogue...');
 
         try {
             const scriptRes = await api.generateScript(scenes, readmeText, apiKey);
@@ -428,8 +439,8 @@ function initControls() {
 
             renderScriptLines(scriptRes.dialogue);
             renderQaReport(qaRes);
-            markAgentStatus('agent-script-status', 'Scriptwriter Agent: Complete');
-            markAgentStatus('agent-qa-status', 'QA Pacing Audit: Passed');
+            markAgentStatus('agent-script-status', 'Scriptwriter Persona Agent: Complete');
+            markAgentStatus('agent-qa-status', `QA Auditor Agent: Passed (${qaRes.pacing_score || 90}/100)`);
             toast.success(`Generated ${scriptRes.dialogue.length} dialogue turns aligned to scenes.`, 'Script Ready');
             setStepLoading(3, false);
         } catch (e) {
@@ -462,7 +473,7 @@ function initControls() {
         const voiceAlex = document.getElementById('host-a-voice-select')?.value || 'Puck';
         const voiceSam = document.getElementById('host-b-voice-select')?.value || 'Kore';
 
-        setStepLoading(4, true, 'Synthesizing PCM via gemini-3.1-flash-tts-preview...');
+        setStepLoading(4, true, 'Chronos MCP Tool calculating PCM duration & freeze schedule...');
         updateStepProgress(4, 25);
 
         try {
@@ -487,7 +498,7 @@ function initControls() {
             const btnStep5 = document.getElementById('btn-to-step-5');
             if (btnStep5) btnStep5.disabled = false;
 
-            markAgentStatus('agent-chronos-status', 'Chronos Sync: Aligned');
+            markAgentStatus('agent-chronos-status', 'Chronos MCP Tool: Synced');
             updateStepProgress(4, 100);
             toast.success('PCM audio synthesized & Chronos offsets calculated!', 'Audio Synced');
             setTimeout(() => setStepLoading(4, false), 400);

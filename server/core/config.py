@@ -205,7 +205,11 @@ class AppConfig:
 
     @property
     def google_cloud_location(self) -> str:
-        return os.getenv("GOOGLE_CLOUD_LOCATION", self._data.get("vertex_ai", {}).get("location", "us-central1"))
+        return os.getenv("GOOGLE_CLOUD_LOCATION", self._data.get("vertex_ai", {}).get("location", "us-west1"))
+
+    @property
+    def google_cloud_agent_id(self) -> str:
+        return os.getenv("GOOGLE_CLOUD_AGENT_ID", self._data.get("vertex_ai", {}).get("agent_id", "agent_1788438917580"))
 
     @property
     def max_hosted_videos_per_user(self) -> int:

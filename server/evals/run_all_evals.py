@@ -64,10 +64,26 @@ def run_stage_3() -> bool:
     print(f"Penalized Defect Score:      {res['defect_injection_benchmark']['reported_overall_score']}/100")
     return res["passed"]
 
+def run_stage_4() -> bool:
+    print("\n" + "=" * 76)
+    print("  STAGE 4: GOOGLE CLOUD ADK DIRECTOR AGENT EVALUATION")
+    print("=" * 76)
+    from server.evals.eval_4_gcp_director import GcpDirectorEvaluator
+    eval4 = GcpDirectorEvaluator()
+    res = eval4.evaluate(num_scenes=2)
+    status_str = "PASSED" if res["passed"] else "FAILED"
+    print(f"Status:                      [{status_str}]")
+    print(f"Overall Director Score:      {res['overall_score']} / 100 (Threshold: 80)")
+    print(f"ADK Agent Execution:         {'VERIFIED' if res['agent_executed'] else 'FAILED'}")
+    print(f"Anti-Timestamp Constraint:   {'PASSED (0 violations)' if res['anti_timestamp_passed'] else 'FAILED'}")
+    print(f"Visual Entity Grounding:     {res['entity_grounding_score']}% ({', '.join(res['entities_found'])})")
+    print(f"Chronos Hold Calculation:    {'VERIFIED' if res['has_freeze_calc'] else 'MISSING'}")
+    return res["passed"]
+
 def main():
     parser = argparse.ArgumentParser(description="Frame Talk - Master Evaluation Suite Runner")
-    parser.add_argument("--stage", type=int, choices=[1, 2, 3], default=None, help="Run specific stage (1, 2, or 3)")
-    parser.add_argument("--all", action="store_true", help="Run all 3 evaluation stages consecutively")
+    parser.add_argument("--stage", type=int, choices=[1, 2, 3, 4], default=None, help="Run specific stage (1, 2, 3, or 4)")
+    parser.add_argument("--all", action="store_true", help="Run all evaluation stages consecutively")
     args = parser.parse_args()
 
     print("*" * 76)
@@ -75,19 +91,19 @@ def main():
     print("*" * 76)
 
     results = {}
-    if args.stage == 1 or args.all or (args.stage is None and not args.all):
-        if args.stage == 1 or args.all:
-            results["Stage 1: Video Analyzer"] = run_stage_1()
-    if args.stage == 2 or args.all:
+    if args.stage == 1:
+        results["Stage 1: Video Analyzer"] = run_stage_1()
+    elif args.stage == 2:
         results["Stage 2: Dialogue Script"] = run_stage_2()
-    if args.stage == 3 or args.all:
+    elif args.stage == 3:
         results["Stage 3: QA Auditor"] = run_stage_3()
-
-    if not results:
-        # Default if no arguments given: run all
+    elif args.stage == 4:
+        results["Stage 4: GCP ADK Director"] = run_stage_4()
+    else:
         results["Stage 1: Video Analyzer"] = run_stage_1()
         results["Stage 2: Dialogue Script"] = run_stage_2()
         results["Stage 3: QA Auditor"] = run_stage_3()
+        results["Stage 4: GCP ADK Director"] = run_stage_4()
 
     print("\n" + "=" * 76)
     print("  EVALUATION SUMMARY MATRIX")

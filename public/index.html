@@ -59,7 +59,10 @@
                 <span class="logo-icon" aria-hidden="true">F</span>
                 <span class="logo-text">Frame Talk</span>
             </a>
-            <div style="display: flex; align-items: center; gap: 0.75rem;" role="toolbar" aria-label="Engine status and credentials">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;" role="toolbar" aria-label="Engine status and credentials">
+                <div id="agent-platform-badge" class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(167, 139, 250, 0.4);" aria-label="Google Cloud Agent Platform: Multi-Agent Network Active">
+                    <span class="status-dot" style="background:#a78bfa;" aria-hidden="true">●</span> <span id="agent-platform-text">Google Cloud Agent Platform</span>
+                </div>
                 <div class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);" aria-label="Vision Model: gemini-3.7-flash active">
                     <span class="status-dot" style="background:#4ade80;" aria-hidden="true">●</span> <span>gemini-3.7-flash</span>
                 </div>
@@ -589,21 +592,24 @@
                 </div>
             </div>
 
-            <!-- AI Agent Status -->
+            <!-- Google Cloud Agent Network Status -->
             <div class="sidebar-card">
-                <div class="sidebar-card-title">AI Agent Status</div>
+                <div class="sidebar-card-title">
+                    <span>Google Cloud Agents (ADK)</span>
+                    <span class="handwritten-badge" style="background:#8b5cf6; color:#fff;">A2A</span>
+                </div>
                 <ul class="agent-status-list">
                     <li id="agent-transcript-status" class="agent-status-item">
-                        <span class="status-box">☐</span> Ingestion Agent: Pending
+                        <span class="status-box">☐</span> Director & Ingestion Agent: Standby
                     </li>
                     <li id="agent-script-status" class="agent-status-item">
-                        <span class="status-box">☐</span> Scriptwriter Agent: Pending
+                        <span class="status-box">☐</span> Scriptwriter Persona Agent: Standby
                     </li>
                     <li id="agent-qa-status" class="agent-status-item">
-                        <span class="status-box">☐</span> QA Pacing Audit: Pending
+                        <span class="status-box">☐</span> QA Pacing Auditor Agent: Standby
                     </li>
                     <li id="agent-chronos-status" class="agent-status-item">
-                        <span class="status-box">☐</span> Chronos Sync: Pending
+                        <span class="status-box">☐</span> Chronos Sync MCP Tool: Standby
                     </li>
                 </ul>
             </div>

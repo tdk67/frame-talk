@@ -21,6 +21,7 @@ class HealthResponse(BaseModel):
     grafana_url: Optional[str] = None
     vertex_ai_enabled: bool = False
     agent_builder_enabled: bool = True
+    agent_platform: str = "Google Cloud Agent Platform (ADK)"
 
 # ─── Uploads & Ingestion ─────────────────────────────────────────────────────
 

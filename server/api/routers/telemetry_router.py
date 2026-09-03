@@ -25,7 +25,8 @@ def health_check():
         app_url=config.app_url,
         grafana_url=config.grafana_url,
         vertex_ai_enabled=config.vertex_ai_enabled,
-        agent_builder_enabled=True
+        agent_builder_enabled=True,
+        agent_platform="Google Cloud Agent Platform (ADK)"
     )
 
 @router.get("/agent-builder/spec")

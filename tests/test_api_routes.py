@@ -171,5 +171,24 @@ class TestApiRoutes(unittest.TestCase):
         self.assertEqual(res_call.status_code, 200)
         self.assertFalse(res_call.json()["result"]["isError"])
 
+    def test_discovery_seo_endpoints(self):
+        """Verify hexagonal discovery_router endpoints for robots.txt, sitemap.xml, llms.txt, and llms-full.txt."""
+        res_robots = self.client.get("/robots.txt")
+        self.assertEqual(res_robots.status_code, 200)
+        self.assertIn("User-agent: *", res_robots.text)
+        self.assertIn("Sitemap:", res_robots.text)
+
+        res_sitemap = self.client.get("/sitemap.xml")
+        self.assertEqual(res_sitemap.status_code, 200)
+        self.assertIn("<urlset", res_sitemap.text)
+
+        res_llms = self.client.get("/llms.txt")
+        self.assertEqual(res_llms.status_code, 200)
+        self.assertIn("# Frame Talk", res_llms.text)
+
+        res_llms_full = self.client.get("/llms-full.txt")
+        self.assertEqual(res_llms_full.status_code, 200)
+        self.assertIn("# Frame Talk", res_llms_full.text)
+
 if __name__ == "__main__":
     unittest.main()

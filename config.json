@@ -31,7 +31,8 @@
   "vertex_ai": {
     "enabled": false,
     "project": "agentic-cinema-frametalk",
-    "location": "us-central1"
+    "location": "us-west1",
+    "agent_id": "agent_1788438917580"
   },
   "quota": {
     "max_hosted_videos_per_user": 3,
