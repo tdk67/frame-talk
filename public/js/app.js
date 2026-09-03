@@ -227,10 +227,19 @@ function updateCostEstimation(state) {
     if (elLen) elLen.textContent = `${readmeChars.toLocaleString()} chars`;
     const elVision = document.getElementById('est-vision-tokens');
     if (elVision) elVision.textContent = `~${videoTokens.toLocaleString()}`;
+    const elVisionSub = document.getElementById('est-vision-sub');
+    if (elVisionSub) elVisionSub.textContent = `gemini-3.7-flash (~$${visionCost.toFixed(3)})`;
+
     const elScript = document.getElementById('est-script-tokens');
     if (elScript) elScript.textContent = `~${scriptTokens.toLocaleString()}`;
+    const elScriptSub = document.getElementById('est-script-sub');
+    if (elScriptSub) elScriptSub.textContent = `gemini-3.7-flash (~$${scriptCost.toFixed(3)})`;
+
     const elTts = document.getElementById('est-tts-chars');
     if (elTts) elTts.textContent = `~${ttsChars.toLocaleString()} chars`;
+    const elTtsSub = document.getElementById('est-tts-sub');
+    if (elTtsSub) elTtsSub.textContent = `gemini-3.1-tts (~$${ttsCost.toFixed(3)})`;
+
     const elCost = document.getElementById('est-total-cost');
     if (elCost) elCost.textContent = `~$${totalCost.toFixed(3)} USD`;
     const elBadge = document.getElementById('cost-badge');

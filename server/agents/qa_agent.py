@@ -167,8 +167,9 @@ OUTPUT JSON ONLY:
                 try:
                     p_tok = getattr(resp.usage_metadata, "prompt_token_count", 0) if hasattr(resp, "usage_metadata") else 0
                     c_tok = getattr(resp.usage_metadata, "candidates_token_count", 0) if hasattr(resp, "usage_metadata") else 0
+                    cached_tok = getattr(resp.usage_metadata, "cached_content_token_count", 0) if hasattr(resp, "usage_metadata") else 0
                     from server.core.pricing import calculate_llm_cost
-                    cost = calculate_llm_cost(config.qa_model, p_tok, c_tok)
+                    cost = calculate_llm_cost(config.qa_model, p_tok, c_tok, cached_tokens=cached_tok)
                     from server.repositories.telemetry_repository import telemetry_repository
                     telemetry_repository.log_llm_call(
                         session_id="qa_audit",
@@ -177,7 +178,8 @@ OUTPUT JSON ONLY:
                         prompt_tokens=p_tok,
                         completion_tokens=c_tok,
                         total_tokens=p_tok + c_tok,
-                        cost_usd=cost
+                        cost_usd=cost,
+                        cached_tokens=cached_tok
                     )
                 except Exception as tel_err:
                     logger.warning(f"Telemetry logging failed: {tel_err}")

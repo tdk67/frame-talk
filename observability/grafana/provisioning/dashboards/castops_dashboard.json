@@ -317,12 +317,16 @@
       "gridPos": { "h": 7, "w": 12, "x": 0, "y": 29 },
       "id": 14,
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": [], "fields": "", "values": true },
+        "showUnfilled": true
       },
       "title": "LLM Invocations by Model",
       "type": "bargauge",
       "targets": [
         {
+          "format": 1,
           "rawSql": "SELECT model_name, count(*) as calls FROM castops.llm_calls GROUP BY model_name ORDER BY calls DESC",
           "refId": "A"
         }
@@ -340,12 +344,12 @@
       },
       "gridPos": { "h": 7, "w": 12, "x": 12, "y": 29 },
       "id": 15,
-      "title": "Agent Token & Cost Breakdown",
+      "title": "Model & Agent Token, Cache & Cost Breakdown",
       "type": "table",
       "targets": [
         {
           "format": 1,
-          "rawSql": "SELECT agent_name, count(*) as calls, sum(prompt_tokens) as prompt_tokens, sum(completion_tokens) as completion_tokens, sum(total_tokens) as total_tokens, round(sum(cost_usd), 4) as cost_usd FROM castops.llm_calls GROUP BY agent_name ORDER BY cost_usd DESC",
+          "rawSql": "SELECT model_name, agent_name, count(*) as calls, sum(prompt_tokens) as prompt_tokens, sum(cached_tokens) as cached_tokens, sum(completion_tokens) as completion_tokens, sum(total_tokens) as total_tokens, round(sum(cost_usd), 4) as cost_usd FROM castops.llm_calls GROUP BY model_name, agent_name ORDER BY cost_usd DESC",
           "refId": "A"
         }
       ]
@@ -367,7 +371,7 @@
       "targets": [
         {
           "format": 1,
-          "rawSql": "SELECT call_time as event_time, agent_name, model_name, prompt_tokens, completion_tokens, total_tokens, round(cost_usd, 5) as cost_usd, latency_ms, status FROM castops.llm_calls ORDER BY call_time DESC LIMIT 50",
+          "rawSql": "SELECT call_time as event_time, model_name, agent_name, prompt_tokens, cached_tokens, completion_tokens, total_tokens, round(cost_usd, 5) as cost_usd, latency_ms, status FROM castops.llm_calls ORDER BY call_time DESC LIMIT 50",
           "refId": "A"
         }
       ]
@@ -439,12 +443,16 @@
       "gridPos": { "h": 5, "w": 12, "x": 12, "y": 45 },
       "id": 20,
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": [], "fields": "", "values": true },
+        "showUnfilled": true
       },
       "title": "User Conversion Funnel by Stage",
       "type": "bargauge",
       "targets": [
         {
+          "format": 1,
           "rawSql": "SELECT action_type, count(*) as events FROM castops.user_activity GROUP BY action_type ORDER BY events DESC",
           "refId": "A"
         }

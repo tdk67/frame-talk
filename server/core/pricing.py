@@ -6,25 +6,33 @@ Provides transparent calculation for token expenditure and pre-flight estimation
 from typing import Dict, Any
 
 # Gemini 3.7 Flash Pricing (USD per 1,000,000 tokens)
-GEMINI_FLASH_INPUT_PER_M = 0.15    # $0.15 / 1M input tokens
-GEMINI_FLASH_OUTPUT_PER_M = 0.60   # $0.60 / 1M output tokens
+GEMINI_FLASH_INPUT_PER_M = 0.15          # $0.15 / 1M uncached input tokens
+GEMINI_FLASH_CACHED_INPUT_PER_M = 0.0375 # $0.0375 / 1M cached input tokens (75% savings)
+GEMINI_FLASH_OUTPUT_PER_M = 0.60         # $0.60 / 1M output tokens
 
 # Gemini 3.1 Flash TTS Preview Pricing (USD per 1,000 characters)
-GEMINI_TTS_PER_1K_CHARS = 0.015    # $0.015 / 1,000 characters
+GEMINI_TTS_PER_1K_CHARS = 0.015          # $0.015 / 1,000 characters
 
 # Video token density (Gemini standard: 258 tokens per second at 1 FPS)
 VIDEO_TOKENS_PER_SECOND = 258
 
-def calculate_llm_cost(model_name: str, prompt_tokens: int, completion_tokens: int) -> float:
-    """Calculates dollar cost for a given LLM model invocation."""
+def calculate_llm_cost(model_name: str, prompt_tokens: int, completion_tokens: int, cached_tokens: int = 0) -> float:
+    """
+    Calculates dollar cost for a given LLM model invocation.
+    Applies official Google Cloud 75% discount on cached input tokens.
+    """
     m = model_name.lower()
     if "tts" in m:
         # For TTS, completion_tokens represents synthesized characters
         chars = completion_tokens or prompt_tokens
         return round((chars / 1000.0) * GEMINI_TTS_PER_1K_CHARS, 6)
     
-    # Standard Gemini 3.7 / 2.0 Flash
-    cost_in = (prompt_tokens / 1_000_000.0) * GEMINI_FLASH_INPUT_PER_M
+    # Standard Gemini Flash with Prompt Caching discount
+    cached = min(prompt_tokens, max(0, cached_tokens))
+    uncached = max(0, prompt_tokens - cached)
+
+    cost_in = (uncached / 1_000_000.0) * GEMINI_FLASH_INPUT_PER_M + \
+              (cached / 1_000_000.0) * GEMINI_FLASH_CACHED_INPUT_PER_M
     cost_out = (completion_tokens / 1_000_000.0) * GEMINI_FLASH_OUTPUT_PER_M
     return round(cost_in + cost_out, 6)
 

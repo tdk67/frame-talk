@@ -95,10 +95,15 @@ class ClickHouseLogger:
                     cost_usd Float64,
                     latency_ms UInt32,
                     status LowCardinality(String),
-                    user_hash LowCardinality(String) DEFAULT ''
+                    user_hash LowCardinality(String) DEFAULT '',
+                    cached_tokens UInt32 DEFAULT 0
                 ) ENGINE = MergeTree()
                 ORDER BY (session_id, call_time)
             """)
+            try:
+                self.client.command(f"ALTER TABLE {self.database}.llm_calls ADD COLUMN IF NOT EXISTS cached_tokens UInt32 DEFAULT 0")
+            except Exception:
+                pass
             self.client.command(f"""
                 CREATE TABLE IF NOT EXISTS {self.database}.user_activity (
                     event_time DateTime64(3),
@@ -255,7 +260,8 @@ class ClickHouseLogger:
                      total_tokens: int = 0,
                      cost_usd: float = 0.0,
                      latency_ms: int = 0,
-                     status: str = "SUCCESS") -> Dict[str, Any]:
+                     status: str = "SUCCESS",
+                     cached_tokens: int = 0) -> Dict[str, Any]:
         """
         Logs an individual LLM or TTS model invocation for observability and cost tracking.
         """
@@ -271,7 +277,8 @@ class ClickHouseLogger:
             "total_tokens": int(tot_tok),
             "cost_usd": round(float(cost_usd), 6),
             "latency_ms": int(latency_ms),
-            "status": status
+            "status": status,
+            "cached_tokens": int(cached_tokens)
         }
 
         # Store in-memory buffer
@@ -292,7 +299,8 @@ class ClickHouseLogger:
                     int(tot_tok),
                     float(cost_usd),
                     int(latency_ms),
-                    status
+                    status,
+                    int(cached_tokens)
                 ]
                 self.client.insert(
                     f"{self.database}.llm_calls",
@@ -300,7 +308,7 @@ class ClickHouseLogger:
                     column_names=[
                         "call_time", "session_id", "agent_name", "model_name",
                         "prompt_tokens", "completion_tokens", "total_tokens",
-                        "cost_usd", "latency_ms", "status"
+                        "cost_usd", "latency_ms", "status", "cached_tokens"
                     ]
                 )
             except Exception as e:
