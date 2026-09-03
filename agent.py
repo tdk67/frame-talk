@@ -10,15 +10,6 @@ from functools import cached_property
 from google.adk.agents import LlmAgent
 from google.adk.models import Gemini
 from google.genai import Client
-try:
-    from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
-    from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
-    HAS_MCP = True
-except Exception:
-    HAS_MCP = False
-    StreamableHTTPConnectionParams = None
-    McpToolset = None
-
 from google.adk.tools import agent_tool
 from google.adk.tools.google_search_tool import GoogleSearchTool
 from google.adk.tools import url_context
