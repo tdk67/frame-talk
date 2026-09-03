@@ -76,5 +76,18 @@ class TestQuotaService(unittest.TestCase):
         self.assertFalse(allowed)
         self.assertTrue(status["is_quota_exhausted"])
 
+    def test_missing_user_id_blocks_server_key(self):
+        """When no user id is provided, using the server key is blocked; only BYOK is allowed."""
+        user_hash = "user_anon_no_id"
+        allowed, err_msg, status = self.service.check_quota(user_hash, has_custom_key=False, has_user_id=False)
+        self.assertFalse(allowed)
+        self.assertIn("Missing User ID", err_msg)
+        self.assertTrue(status["is_quota_exhausted"])
+        self.assertFalse(status["hosted_mode"])
+
+        allowed_byok, _, status_byok = self.service.check_quota(user_hash, has_custom_key=True, has_user_id=False)
+        self.assertTrue(allowed_byok)
+        self.assertFalse(status_byok["is_quota_exhausted"])
+
 if __name__ == "__main__":
     unittest.main()

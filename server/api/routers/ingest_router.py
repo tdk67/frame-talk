@@ -59,13 +59,16 @@ async def analyze_video(
     # Enforce hosted key quota check (max 3 videos per user if on server key)
     from server.services.quota_service import quota_service
     has_custom_key = bool(api_key and api_key.strip())
-    allowed, err_msg, quota_info = quota_service.check_quota(user_hash=user_hash, has_custom_key=has_custom_key)
+    has_user_id = getattr(request.state, "has_user_id", False)
+    allowed, err_msg, quota_info = quota_service.check_quota(user_hash=user_hash, has_custom_key=has_custom_key, has_user_id=has_user_id)
     if not allowed:
         from fastapi import HTTPException
+        status_code = 401 if not has_user_id and not has_custom_key else 429
+        err_code = "AUTH_REQUIRED" if not has_user_id and not has_custom_key else "QUOTA_EXHAUSTED"
         raise HTTPException(
-            status_code=429,
+            status_code=status_code,
             detail={
-                "error": "QUOTA_EXHAUSTED",
+                "error": err_code,
                 "message": err_msg,
                 "quota": quota_info
             }

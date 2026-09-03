@@ -47,7 +47,8 @@ class PureASGIUserContextMiddleware:
         elif scope.get("client"):
             client_ip = str(scope["client"][0])
 
-        if raw_id and _USER_ID_REGEX.match(raw_id):
+        has_user_id = bool(raw_id and _USER_ID_REGEX.match(raw_id))
+        if has_user_id:
             clean_id = raw_id
         else:
             ip_entropy = client_ip or "default_ephemeral_client"
@@ -58,6 +59,7 @@ class PureASGIUserContextMiddleware:
         # Inject into request state
         state = scope.setdefault("state", {})
         state["user_id"] = clean_id
+        state["has_user_id"] = has_user_id
         state["user_hash"] = user_hash
 
         # 2. Wrap send to inject security headers & user hash on response

@@ -40,9 +40,10 @@ def get_user_quota(request: Request):
     """Returns user quota status for hosted demo key vs custom BYOK key."""
     from server.services.quota_service import quota_service
     user_hash = getattr(request.state, "user_hash", "anon_default")
+    has_user_id = getattr(request.state, "has_user_id", False)
     key = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
     has_custom_key = bool(key and key.strip())
-    return quota_service.get_quota_status(user_hash=user_hash, has_custom_key=has_custom_key)
+    return quota_service.get_quota_status(user_hash=user_hash, has_custom_key=has_custom_key, has_user_id=has_user_id)
 
 @router.get("/clickhouse/events")
 def get_clickhouse_events(session_id: Optional[str] = None, limit: int = 50):

@@ -190,5 +190,21 @@ class TestApiRoutes(unittest.TestCase):
         self.assertEqual(res_llms_full.status_code, 200)
         self.assertIn("# Frame Talk", res_llms_full.text)
 
+    def test_missing_user_id_blocks_hosted_key(self):
+        """Verify endpoints reject requests without X-FrameTalk-User-Id from using the hosted server key."""
+        response = self.client.post("/api/test-voice", json={"voice_name": "Puck", "text": "Hello"})
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("Missing User ID", response.json().get("detail", ""))
+
+    def test_missing_user_id_allowed_with_byok(self):
+        """Verify requests without X-FrameTalk-User-Id ARE allowed if BYOK key is provided."""
+        response = self.client.post(
+            "/api/test-voice",
+            json={"voice_name": "Puck", "text": "Hello"},
+            headers={"X-API-Key": "AIzaSyTestKey_BYOK_123456"}
+        )
+        # Should NOT fail with 401 Missing User ID
+        self.assertNotEqual(response.status_code, 401)
+
 if __name__ == "__main__":
     unittest.main()

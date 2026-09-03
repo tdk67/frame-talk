@@ -37,7 +37,7 @@ class QuotaService:
         except Exception as e:
             logger.error(f"Failed to save user quotas: {e}")
 
-    def get_quota_status(self, user_hash: str, has_custom_key: bool = False) -> Dict[str, Any]:
+    def get_quota_status(self, user_hash: str, has_custom_key: bool = False, has_user_id: bool = True) -> Dict[str, Any]:
         """Returns the current usage and quota status for a user."""
         has_server_key = bool(config.get_server_api_key() or config.vertex_ai_enabled)
         user_record = self._memory_cache.get(user_hash, {"videos_count": 0, "cost_usd": 0.0})
@@ -61,6 +61,21 @@ class QuotaService:
                 "message": "Unlimited runs active (BYOK Custom Key)"
             }
 
+        # If no user ID provided and no custom key, server key is forbidden
+        if not has_user_id:
+            return {
+                "has_server_key": has_server_key,
+                "has_custom_key": False,
+                "hosted_mode": False,
+                "videos_used": videos_used,
+                "videos_remaining": 0,
+                "max_videos": max_videos,
+                "cost_usd": round(cost_used, 4),
+                "cost_cap_usd": max_cost,
+                "is_quota_exhausted": True,
+                "message": "User ID required for hosted demo key. Anonymous requests must provide their own Gemini API key (BYOK) via 'X-API-Key'."
+            }
+
         videos_remaining = max(0, max_videos - videos_used)
         is_exhausted = (videos_used >= max_videos) or (cost_used >= max_cost)
 
@@ -81,16 +96,20 @@ class QuotaService:
             )
         }
 
-    def check_quota(self, user_hash: str, has_custom_key: bool = False) -> Tuple[bool, str, Dict[str, Any]]:
+    def check_quota(self, user_hash: str, has_custom_key: bool = False, has_user_id: bool = True) -> Tuple[bool, str, Dict[str, Any]]:
         """
         Validates if the user is allowed to start a video analysis.
         Returns (is_allowed, error_message, quota_status).
         """
-        status = self.get_quota_status(user_hash, has_custom_key)
+        status = self.get_quota_status(user_hash, has_custom_key, has_user_id=has_user_id)
 
         # BYOK users are always permitted
         if has_custom_key:
             return True, "", status
+
+        # If no User ID provided, using server key from .env is forbidden
+        if not has_user_id:
+            return False, "Access Denied: Missing User ID. The hosted server key cannot be used without an 'X-FrameTalk-User-Id' header. Please provide your own Gemini API key (BYOK) via 'X-API-Key'.", status
 
         # If no server key and no custom key, cannot run
         if not status["has_server_key"]:
