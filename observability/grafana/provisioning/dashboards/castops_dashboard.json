@@ -186,13 +186,305 @@
           }
         }
       },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 15 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
       "id": 8,
       "title": "Real-Time Synchronization Time-Series Events Log",
       "type": "table",
       "targets": [
         {
           "rawSql": "SELECT event_time, speaker, dialogue_text, audio_duration_ms, required_freeze_ms, pacing_status FROM castops.sync_events ORDER BY event_time DESC LIMIT 50",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 9,
+      "title": "Agent & Model Observability: LLM Invocations, Token Usage & Dollar Cost",
+      "type": "row"
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 24 },
+      "id": 10,
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "title": "Total LLM Calls",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT count(*) as total_calls FROM castops.llm_calls",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 24 },
+      "id": 11,
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "title": "Input Tokens (Prompt)",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT sum(prompt_tokens) as total_input_tokens FROM castops.llm_calls",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 24 },
+      "id": 12,
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "title": "Output Tokens (Completion)",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT sum(completion_tokens) as total_output_tokens FROM castops.llm_calls",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 2.0 }
+            ]
+          },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 24 },
+      "id": 13,
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "title": "Total App LLM & TTS Cost",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT sum(cost_usd) as total_cost_usd FROM castops.llm_calls",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "displayMode": "gradient", "orientation": "horizontal" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 29 },
+      "id": 14,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "title": "LLM Invocations by Model",
+      "type": "bargauge",
+      "targets": [
+        {
+          "rawSql": "SELECT model_name, count(*) as calls FROM castops.llm_calls GROUP BY model_name ORDER BY calls DESC",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 29 },
+      "id": 15,
+      "title": "Agent Token & Cost Breakdown",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT agent_name, count(*) as calls, sum(prompt_tokens) as prompt_tokens, sum(completion_tokens) as completion_tokens, sum(total_tokens) as total_tokens, round(sum(cost_usd), 4) as cost_usd FROM castops.llm_calls GROUP BY agent_name ORDER BY cost_usd DESC",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 36 },
+      "id": 16,
+      "title": "Real-Time LLM Call Invocations Trace Log",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT call_time, agent_name, model_name, prompt_tokens, completion_tokens, total_tokens, round(cost_usd, 5) as cost_usd, latency_ms, status FROM castops.llm_calls ORDER BY call_time DESC LIMIT 50",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "id": 17,
+      "title": "Executive Multi-User Analytics & Funnel Conversion (Zero PII)",
+      "type": "row"
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 45 },
+      "id": 18,
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "title": "Total Unique Users",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT uniqExact(user_hash) as total_unique_users FROM castops.user_activity",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 45 },
+      "id": 19,
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "title": "Total User Activities",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT count(*) as total_events FROM castops.user_activity",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "displayMode": "gradient", "orientation": "horizontal" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 45 },
+      "id": 20,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "title": "User Conversion Funnel by Stage",
+      "type": "bargauge",
+      "targets": [
+        {
+          "rawSql": "SELECT action_type, count(*) as events FROM castops.user_activity GROUP BY action_type ORDER BY events DESC",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      },
+      "gridPos": { "h": 7, "w": 14, "x": 0, "y": 50 },
+      "id": 21,
+      "title": "User Action Distributions (Avg, Min, Max per User)",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT action_type, round(avg(cnt), 2) as avg_per_user, min(cnt) as min_per_user, max(cnt) as max_per_user, count(user_hash) as active_users FROM (SELECT user_hash, action_type, count(*) as cnt FROM castops.user_activity GROUP BY user_hash, action_type) GROUP BY action_type ORDER BY active_users DESC",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      },
+      "gridPos": { "h": 7, "w": 10, "x": 14, "y": 50 },
+      "id": 22,
+      "title": "Real-Time User Activity Stream (Pseudonymized)",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT event_time, user_hash, action_type, session_id FROM castops.user_activity ORDER BY event_time DESC LIMIT 50",
           "refId": "A"
         }
       ]

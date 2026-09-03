@@ -7,10 +7,15 @@ const API_BASE = window.location.origin.includes('localhost') || window.location
     ? ''
     : '';
 
-function getHeaders(apiKey) {
+async function getHeaders(apiKey) {
     const headers = { 'Content-Type': 'application/json' };
     if (apiKey && typeof apiKey === 'string' && apiKey.trim()) {
         headers['X-API-Key'] = apiKey.trim();
+    }
+    if (window.getUserId) {
+        try {
+            headers['X-FrameTalk-User-Id'] = await window.getUserId();
+        } catch (e) {}
     }
     return headers;
 }
@@ -29,7 +34,8 @@ export const api = {
     computeFastHash,
 
     async getJob(jobId) {
-        const res = await fetch(`${API_BASE}/api/jobs/${jobId}`);
+        const headers = await getHeaders();
+        const res = await fetch(`${API_BASE}/api/jobs/${jobId}`, { headers });
         if (!res.ok) {
             if (res.status === 404) return null;
             throw new Error(`Failed to fetch job: ${await res.text()}`);
@@ -51,8 +57,16 @@ export const api = {
         if (videoFile) formData.append('video', videoFile);
         if (readmeFile) formData.append('readme', readmeFile);
 
+        const headers = {};
+        if (window.getUserId) {
+            try {
+                headers['X-FrameTalk-User-Id'] = await window.getUserId();
+            } catch (e) {}
+        }
+
         const res = await fetch(`${API_BASE}/api/upload`, {
             method: 'POST',
+            headers,
             body: formData
         });
         if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
@@ -63,7 +77,7 @@ export const api = {
         // Step 1: Submit job
         const res = await fetch(`${API_BASE}/api/analyze-video`, {
             method: 'POST',
-            headers: getHeaders(apiKey),
+            headers: await getHeaders(apiKey),
             body: JSON.stringify({
                 video_filename: videoFilename,
                 readme_text: readmeText,
@@ -78,7 +92,7 @@ export const api = {
         if (onProgress) onProgress(job_id);
 
         if (initialStatus === 'COMPLETED' || initialStatus === 'FAILED') {
-            const pollRes = await fetch(`${API_BASE}/api/jobs/${job_id}`);
+            const pollRes = await fetch(`${API_BASE}/api/jobs/${job_id}`, { headers: await getHeaders() });
             if (!pollRes.ok) throw new Error(`Fetch failed: ${await pollRes.text()}`);
             const job = await pollRes.json();
             if (job.status === 'COMPLETED') return job.result;
@@ -89,7 +103,7 @@ export const api = {
         while (true) {
             await new Promise(resolve => setTimeout(resolve, 2000)); // Poll every 2 seconds
             
-            const pollRes = await fetch(`${API_BASE}/api/jobs/${job_id}`);
+            const pollRes = await fetch(`${API_BASE}/api/jobs/${job_id}`, { headers: await getHeaders() });
             if (!pollRes.ok) throw new Error(`Polling failed: ${await pollRes.text()}`);
             
             const job = await pollRes.json();
@@ -105,7 +119,7 @@ export const api = {
     async generateScript(scenes, readmeText, apiKey) {
         const res = await fetch(`${API_BASE}/api/generate-script`, {
             method: 'POST',
-            headers: getHeaders(apiKey),
+            headers: await getHeaders(apiKey),
             body: JSON.stringify({
                 scenes,
                 readme_text: readmeText
@@ -118,7 +132,7 @@ export const api = {
     async auditScript(scenes, dialogue, readmeText, apiKey) {
         const res = await fetch(`${API_BASE}/api/audit-script`, {
             method: 'POST',
-            headers: getHeaders(apiKey),
+            headers: await getHeaders(apiKey),
             body: JSON.stringify({
                 scenes,
                 dialogue,
@@ -132,7 +146,7 @@ export const api = {
     async synthesizeAudio(scenes, dialogue, voiceAlex, voiceSam, apiKey) {
         const res = await fetch(`${API_BASE}/api/synthesize-audio`, {
             method: 'POST',
-            headers: getHeaders(apiKey),
+            headers: await getHeaders(apiKey),
             body: JSON.stringify({
                 scenes,
                 dialogue,
@@ -147,7 +161,7 @@ export const api = {
     async testVoice(voiceName, apiKey) {
         const res = await fetch(`${API_BASE}/api/test-voice`, {
             method: 'POST',
-            headers: getHeaders(apiKey),
+            headers: await getHeaders(apiKey),
             body: JSON.stringify({
                 voice_name: voiceName,
                 text: "Hi, I'm your selected voice. How do I sound?"
@@ -160,7 +174,7 @@ export const api = {
     async compileVideo(sessionId, videoFilename, audioFilename, chronosSchedule) {
         const res = await fetch(`${API_BASE}/api/compile-video`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: await getHeaders(),
             body: JSON.stringify({
                 session_id: sessionId,
                 video_filename: videoFilename,
@@ -176,7 +190,7 @@ export const api = {
         const url = sessionId 
             ? `${API_BASE}/api/clickhouse/events?session_id=${encodeURIComponent(sessionId)}`
             : `${API_BASE}/api/clickhouse/events`;
-        const res = await fetch(url);
+        const res = await fetch(url, { headers: await getHeaders() });
         if (!res.ok) return { events: [], metrics: {} };
         return await res.json();
     }

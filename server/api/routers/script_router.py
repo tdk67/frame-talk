@@ -2,21 +2,28 @@
 Scriptwriting & QA API Router
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from typing import Optional
 from server.models.schemas import ScriptRequest, ScriptResponse, QaRequest, QaResponse
 from server.services.studio_service import studio_service
+from server.repositories.telemetry_repository import telemetry_repository
 from server.api.dependencies import get_api_key
 
 router = APIRouter(prefix="/api", tags=["2. Script & QA"])
 
 @router.post("/generate-script", response_model=ScriptResponse)
-async def generate_script(req: ScriptRequest, api_key: Optional[str] = Depends(get_api_key)):
+async def generate_script(req: ScriptRequest, request: Request, api_key: Optional[str] = Depends(get_api_key)):
     """Generates two-host technical conversation anchored to visual scenes."""
     dialogue = studio_service.generate_dialogue_script(
         scenes=req.scenes,
         readme_text=req.readme_text,
         api_key=api_key
+    )
+    user_hash = getattr(request.state, "user_hash", "anon_default")
+    telemetry_repository.log_user_activity(
+        user_hash=user_hash,
+        action_type="SCRIPT_GENERATED",
+        metadata=f"turns:{len(dialogue)}"
     )
     return ScriptResponse(dialogue=dialogue, total_turns=len(dialogue))
 

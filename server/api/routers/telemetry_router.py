@@ -39,6 +39,51 @@ def get_clickhouse_metrics(session_id: Optional[str] = None):
     """Aggregated sync & drift metrics."""
     return telemetry_repository.get_metrics_summary(session_id=session_id)
 
+@router.get("/clickhouse/llm-calls")
+def get_clickhouse_llm_calls(session_id: Optional[str] = None, limit: int = 50):
+    """Queries individual LLM model invocations, token counts, and costs."""
+    calls = telemetry_repository.get_llm_calls(session_id=session_id, limit=limit)
+    metrics = telemetry_repository.get_llm_metrics_summary(session_id=session_id)
+    return {
+        "calls": calls,
+        "metrics": metrics,
+        "clickhouse_status": "ONLINE" if telemetry_repository.is_connected else "SIMULATED_BUFFER"
+    }
+
+@router.get("/clickhouse/llm-metrics")
+def get_clickhouse_llm_metrics(session_id: Optional[str] = None):
+    """Aggregated LLM invocation counts, tokens, and cost breakdown per model and agent."""
+    return telemetry_repository.get_llm_metrics_summary(session_id=session_id)
+
+@router.get("/clickhouse/user-statistics")
+def get_user_statistics():
+    """Aggregated anonymous user counts, conversion funnel, and activity distributions."""
+    return telemetry_repository.get_user_statistics_summary()
+
+@router.get("/clickhouse/user-activities")
+def get_user_activities(limit: int = 50, user_hash: Optional[str] = None):
+    """Recent anonymous user activity log (zero PII, pseudonymized)."""
+    return {
+        "activities": telemetry_repository.get_user_activities(limit=limit, user_hash=user_hash),
+        "summary": telemetry_repository.get_user_statistics_summary()
+    }
+
+@router.get("/estimate-cost")
+def estimate_cost_get(duration_sec: float = 120.0, readme_chars: int = 5000):
+    """Calculates transparent pre-flight run cost and token estimation."""
+    from server.core.pricing import estimate_pipeline_cost
+    return estimate_pipeline_cost(video_duration_sec=duration_sec, readme_chars=readme_chars)
+
+@router.post("/estimate-cost")
+async def estimate_cost_post(request: Request):
+    """Calculates transparent pre-flight run cost and token estimation via POST body."""
+    from server.core.pricing import estimate_pipeline_cost
+    body = await request.json() if request.headers.get("content-type") == "application/json" else {}
+    duration_sec = float(body.get("duration_sec", 120.0))
+    readme_chars = int(body.get("readme_chars", 5000))
+    return estimate_pipeline_cost(video_duration_sec=duration_sec, readme_chars=readme_chars)
+
+
 # --- Zero-Token BYOK Verification (Matching VentureBot Spec) ---
 
 import urllib.request

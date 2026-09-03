@@ -23,11 +23,12 @@ class JobRepository:
             raise InvalidInputException("Job ID path traversal detected.")
         return resolved
 
-    def create_job(self, job_id: Optional[str] = None) -> str:
+    def create_job(self, job_id: Optional[str] = None, user_hash: Optional[str] = None) -> str:
         if not job_id:
             job_id = f"job_{uuid.uuid4().hex}"
         state = {
             "job_id": job_id,
+            "owner_user_hash": user_hash,
             "status": "PENDING",
             "created_at": time.time(),
             "updated_at": time.time(),
@@ -56,11 +57,18 @@ class JobRepository:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(state, f)
 
-    def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job(self, job_id: str, user_hash: Optional[str] = None) -> Optional[Dict[str, Any]]:
         path = self._get_path(job_id)
         if not path.exists():
             return None
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            state = json.load(f)
+
+        # Multi-user isolation: if an owner is set and a specific user_hash was supplied, verify ownership
+        job_owner = state.get("owner_user_hash")
+        if job_owner and user_hash and job_owner != user_hash:
+            return None  # Isolated from other users
+
+        return state
 
 job_repository = JobRepository()

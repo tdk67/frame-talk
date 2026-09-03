@@ -161,6 +161,23 @@ OUTPUT JSON ONLY:
                     contents=[prompt],
                     config=types.GenerateContentConfig(response_mime_type="application/json")
                 )
+                try:
+                    p_tok = getattr(resp.usage_metadata, "prompt_token_count", 0) if hasattr(resp, "usage_metadata") else 0
+                    c_tok = getattr(resp.usage_metadata, "candidates_token_count", 0) if hasattr(resp, "usage_metadata") else 0
+                    from server.core.pricing import calculate_llm_cost
+                    cost = calculate_llm_cost("gemini-3.7-flash", p_tok, c_tok)
+                    from server.repositories.telemetry_repository import telemetry_repository
+                    telemetry_repository.log_llm_call(
+                        session_id="qa_audit",
+                        agent_name="QAAgent",
+                        model_name="gemini-3.7-flash",
+                        prompt_tokens=p_tok,
+                        completion_tokens=c_tok,
+                        total_tokens=p_tok + c_tok,
+                        cost_usd=cost
+                    )
+                except Exception as tel_err:
+                    logger.warning(f"Telemetry logging failed: {tel_err}")
                 cleaned = resp.text.strip()
                 match = re.search(r'\{.*\}', cleaned, re.DOTALL)
                 if match:

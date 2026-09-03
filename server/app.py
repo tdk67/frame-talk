@@ -35,6 +35,10 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
+# User Context Middleware (Anonymous client isolation & pseudonymization)
+from server.api.middleware.user_context import UserContextMiddleware
+app.add_middleware(UserContextMiddleware)
+
 # Restricted Cross-Origin Resource Sharing (CORS)
 app.add_middleware(
     CORSMiddleware,

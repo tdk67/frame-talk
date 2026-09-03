@@ -84,5 +84,40 @@ class TestApiRoutes(unittest.TestCase):
         self.assertIn("total_audio_duration_ms", data)
         self.assertIn("total_freeze_injected_ms", data)
 
+    def test_clickhouse_llm_metrics_endpoint(self):
+        """Verify /api/clickhouse/llm-metrics returns token and cost breakdown."""
+        from server.repositories.telemetry_repository import telemetry_repository
+        telemetry_repository.log_llm_call(
+            session_id="test_llm_session",
+            agent_name="IngestionAgent",
+            model_name="gemini-3.7-flash",
+            prompt_tokens=15000,
+            completion_tokens=800,
+            total_tokens=15800,
+            cost_usd=0.0027,
+            latency_ms=1200
+        )
+        response = self.client.get("/api/clickhouse/llm-metrics")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("total_llm_calls", data)
+        self.assertIn("total_prompt_tokens", data)
+        self.assertIn("total_cost_usd", data)
+        self.assertIn("by_model", data)
+        self.assertIn("by_agent", data)
+        self.assertGreaterEqual(data["total_llm_calls"], 1)
+
+    def test_estimate_cost_endpoint(self):
+        """Verify /api/estimate-cost returns pre-flight token and dollar estimation."""
+        response = self.client.get("/api/estimate-cost?duration_sec=120&readme_chars=4000")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("stages", data)
+        self.assertIn("total_estimated_tokens", data)
+        self.assertIn("total_estimated_cost_usd", data)
+        self.assertIn("formatted_cost", data)
+        self.assertEqual(data["video_duration_sec"], 120.0)
+        self.assertGreater(data["total_estimated_cost_usd"], 0.0)
+
 if __name__ == "__main__":
     unittest.main()

@@ -120,6 +120,45 @@ function renderStateUpdates(state) {
     if (btnToStep2) {
         btnToStep2.disabled = !state.videoFile || !state.readmeText || state.isProcessing;
     }
+
+    // 4. Update Pre-Flight Cost Estimation Card
+    updateCostEstimation(state);
+}
+
+function updateCostEstimation(state) {
+    const dur = (state && state.videoDurationSec && state.videoDurationSec > 0) ? state.videoDurationSec : 120.0;
+    const readmeChars = (state && state.readmeText && state.readmeText.length > 0) ? state.readmeText.length : 5000;
+
+    const videoTokens = Math.round(dur * 258);
+    const readmeTokens = Math.round(readmeChars / 4);
+    const ingestTokens = videoTokens + readmeTokens + 2200;
+    const estWords = Math.round(dur * 2.5);
+    const scriptTokens = Math.round(estWords * 1.35 + 2250);
+    const ttsChars = Math.round(estWords * 5.5);
+
+    const visionCost = (ingestTokens / 1000000) * 0.15;
+    const scriptCost = (scriptTokens / 1000000) * 0.35;
+    const ttsCost = (ttsChars / 1000) * 0.015;
+    const totalCost = Math.max(0.01, visionCost + scriptCost + ttsCost);
+
+    const mins = Math.floor(dur / 60);
+    const secs = Math.floor(dur % 60);
+    const durStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
+
+    const elDur = document.getElementById('est-video-dur');
+    if (elDur) elDur.textContent = durStr;
+    const elLen = document.getElementById('est-readme-len');
+    if (elLen) elLen.textContent = `${readmeChars.toLocaleString()} chars`;
+    const elVision = document.getElementById('est-vision-tokens');
+    if (elVision) elVision.textContent = `~${videoTokens.toLocaleString()}`;
+    const elScript = document.getElementById('est-script-tokens');
+    if (elScript) elScript.textContent = `~${scriptTokens.toLocaleString()}`;
+    const elTts = document.getElementById('est-tts-chars');
+    if (elTts) elTts.textContent = `~${ttsChars.toLocaleString()} chars`;
+    const elCost = document.getElementById('est-total-cost');
+    if (elCost) elCost.textContent = `~$${totalCost.toFixed(3)} USD`;
+    const elBadge = document.getElementById('cost-badge');
+    if (elBadge) elBadge.textContent = `~$${totalCost.toFixed(3)} USD`;
 }
 
 // ─── File Ingestion ──────────────────────────────────────────────────────────

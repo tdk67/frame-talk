@@ -35,25 +35,36 @@ async def upload_assets(
 
     return resp
 
-from fastapi import Response
+from fastapi import Response, Request
+from server.repositories.telemetry_repository import telemetry_repository
 
 @router.post("/analyze-video")
 async def analyze_video(
     req: AnalyzeRequest,
     background_tasks: BackgroundTasks,
     response: Response,
+    request: Request,
     api_key: Optional[str] = Depends(get_api_key)
 ):
     """Dispatches video analysis to a background worker or returns existing job status."""
     import uuid
+    user_hash = getattr(request.state, "user_hash", "anon_default")
     job_id = req.video_hash or f"job_{uuid.uuid4().hex}"
     
-    job = job_repository.get_job(job_id)
+    job = job_repository.get_job(job_id, user_hash=user_hash)
     if job:
         response.status_code = 200
         return {"job_id": job_id, "status": job["status"]}
 
-    job_repository.create_job(job_id=job_id)
+    job_repository.create_job(job_id=job_id, user_hash=user_hash)
+    
+    # Log user activity event
+    telemetry_repository.log_user_activity(
+        user_hash=user_hash,
+        action_type="VIDEO_ANALYZED",
+        session_id=job_id,
+        metadata=f"video:{req.video_filename},dur:{req.video_duration_seconds}"
+    )
     
     background_tasks.add_task(
         studio_service.run_video_analysis_job,
@@ -69,9 +80,10 @@ async def analyze_video(
     return {"job_id": job_id, "status": "PENDING"}
 
 @router.get("/jobs/{job_id}")
-async def get_job_status(job_id: str):
-    """Polls the background worker job status."""
-    job = job_repository.get_job(job_id)
+async def get_job_status(job_id: str, request: Request):
+    """Polls the background worker job status with multi-user isolation."""
+    user_hash = getattr(request.state, "user_hash", None)
+    job = job_repository.get_job(job_id, user_hash=user_hash)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job

@@ -45,6 +45,22 @@ class AudioSynthEngine:
                 pcm_bytes = self._call_tts_api(text, active_voice, speaker, active_key)
                 if pcm_bytes and len(pcm_bytes) > 1000:
                     dur_ms = int((len(pcm_bytes) / PCM_BYTES_PER_SECOND) * 1000)
+                    try:
+                        from server.core.pricing import calculate_llm_cost
+                        cost = calculate_llm_cost("gemini-3.1-flash-tts-preview", 0, len(text))
+                        from server.repositories.telemetry_repository import telemetry_repository
+                        telemetry_repository.log_llm_call(
+                            session_id="tts_synthesis",
+                            agent_name="AudioSynthEngine",
+                            model_name="gemini-3.1-flash-tts-preview",
+                            prompt_tokens=int(len(text) / 4),
+                            completion_tokens=len(text),
+                            total_tokens=int(len(text) / 4) + len(text),
+                            cost_usd=cost,
+                            latency_ms=dur_ms
+                        )
+                    except Exception as tel_err:
+                        logger.warning(f"TTS telemetry logging failed: {tel_err}")
                     return pcm_bytes, dur_ms
             except Exception as e:
                 logger.warning(f"TTS API failed for '{text[:20]}...' ({e}). Using synthesized audio.")

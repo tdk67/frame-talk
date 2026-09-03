@@ -1,12 +1,9 @@
-"""
-Audio & Compilation API Router
-"""
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from typing import Optional
 from server.models.schemas import SynthesizeRequest, SynthesizeResponse, CompileRequest, CompileResponse, TestVoiceRequest, TestVoiceResponse
 from server.services.audio_service import audio_service
 from server.services.compiler_service import compiler_service
+from server.repositories.telemetry_repository import telemetry_repository
 from server.api.dependencies import get_api_key
 
 router = APIRouter(prefix="/api", tags=["3. Audio & Compilation"])
@@ -18,7 +15,7 @@ async def test_voice(req: TestVoiceRequest, api_key: Optional[str] = Depends(get
     return TestVoiceResponse(**result)
 
 @router.post("/synthesize-audio", response_model=SynthesizeResponse)
-async def synthesize_audio(req: SynthesizeRequest, api_key: Optional[str] = Depends(get_api_key)):
+async def synthesize_audio(req: SynthesizeRequest, request: Request, api_key: Optional[str] = Depends(get_api_key)):
     """Synthesizes speech via gemini-3.1-flash-tts-preview and executes Chronos timeline stretch."""
     result = audio_service.synthesize_and_align(
         scenes=req.scenes,
@@ -28,15 +25,29 @@ async def synthesize_audio(req: SynthesizeRequest, api_key: Optional[str] = Depe
         session_id=req.session_id,
         api_key=api_key
     )
+    user_hash = getattr(request.state, "user_hash", "anon_default")
+    telemetry_repository.log_user_activity(
+        user_hash=user_hash,
+        action_type="AUDIO_SYNTHESIZED",
+        session_id=req.session_id,
+        metadata=f"turns:{len(req.dialogue)},clips:{len(result.get('audio_clips', []))}"
+    )
     return SynthesizeResponse(**result)
 
 @router.post("/compile-video", response_model=CompileResponse)
-async def compile_video(req: CompileRequest):
+async def compile_video(req: CompileRequest, request: Request):
     """Compiles the final synchronized 1080p MP4 with permanent frame freezes via FFmpeg."""
     res = compiler_service.compile_production_video(
         session_id=req.session_id,
         video_filename=req.video_filename,
         audio_filename=req.audio_filename,
         chronos_schedule=req.chronos_schedule
+    )
+    user_hash = getattr(request.state, "user_hash", "anon_default")
+    telemetry_repository.log_user_activity(
+        user_hash=user_hash,
+        action_type="VIDEO_COMPILED",
+        session_id=req.session_id,
+        metadata=f"video:{req.video_filename},freezes:{len(req.chronos_schedule)}"
     )
     return CompileResponse(**res)

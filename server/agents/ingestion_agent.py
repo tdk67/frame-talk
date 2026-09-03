@@ -164,6 +164,25 @@ REFINEMENT INSTRUCTIONS:
                 contents=[video_file, prompt],
                 config=types.GenerateContentConfig(response_mime_type="application/json")
             )
+            # Log telemetry
+            try:
+                p_tok = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
+                c_tok = getattr(response.usage_metadata, "candidates_token_count", 0) if hasattr(response, "usage_metadata") else 0
+                from server.core.pricing import calculate_llm_cost
+                cost = calculate_llm_cost("gemini-3.7-flash", p_tok, c_tok)
+                from server.repositories.telemetry_repository import telemetry_repository
+                telemetry_repository.log_llm_call(
+                    session_id=os.path.basename(video_path),
+                    agent_name="IngestionAgent",
+                    model_name="gemini-3.7-flash",
+                    prompt_tokens=p_tok,
+                    completion_tokens=c_tok,
+                    total_tokens=p_tok + c_tok,
+                    cost_usd=cost,
+                    latency_ms=int(elapsed * 1000)
+                )
+            except Exception as tel_err:
+                logger.warning(f"Telemetry logging failed: {tel_err}")
             return response.text
 
         # OpenRouter fallback
