@@ -224,5 +224,19 @@ class TestApiRoutes(unittest.TestCase):
         )
         self.assertNotEqual(res_voice.status_code, 401)
 
+    def test_missing_secret_key_fails_fast(self):
+        """Verify that missing SESSION_SECRET_KEY in environment raises RuntimeError with no fallbacks."""
+        import os
+        from server.core.config import config
+        original_secret = os.environ.get("SESSION_SECRET_KEY")
+        try:
+            os.environ.pop("SESSION_SECRET_KEY", None)
+            with self.assertRaises(RuntimeError) as ctx:
+                _ = config.session_secret_key
+            self.assertIn("Missing required environment secret", str(ctx.exception))
+        finally:
+            if original_secret:
+                os.environ["SESSION_SECRET_KEY"] = original_secret
+
 if __name__ == "__main__":
     unittest.main()

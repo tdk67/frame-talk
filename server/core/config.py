@@ -201,38 +201,48 @@ class AppConfig:
 
     @property
     def google_cloud_project(self) -> str:
-        return os.getenv("GOOGLE_CLOUD_PROJECT", self._data.get("vertex_ai", {}).get("project", "agentic-cinema-frametalk"))
+        return self._data.get("vertex_ai", {}).get("project", "agentic-cinema-frametalk")
 
     @property
     def google_cloud_location(self) -> str:
-        return os.getenv("GOOGLE_CLOUD_LOCATION", self._data.get("vertex_ai", {}).get("location", "us-west1"))
+        return self._data.get("vertex_ai", {}).get("location", "us-west1")
 
     @property
     def google_cloud_agent_id(self) -> str:
-        return os.getenv("GOOGLE_CLOUD_AGENT_ID", self._data.get("vertex_ai", {}).get("agent_id", "agent_1788438917580"))
+        return self._data.get("vertex_ai", {}).get("agent_id", "agent_1788438917580")
 
     @property
     def max_hosted_videos_per_user(self) -> int:
-        return int(os.getenv("MAX_HOSTED_VIDEOS_PER_USER", self._data.get("quota", {}).get("max_hosted_videos_per_user", 3)))
+        return int(self._data.get("quota", {}).get("max_hosted_videos_per_user", 3))
 
     @property
     def max_hosted_cost_per_user_usd(self) -> float:
-        return float(os.getenv("MAX_HOSTED_COST_PER_USER_USD", self._data.get("quota", {}).get("max_hosted_cost_per_user_usd", 1.00)))
+        return float(self._data.get("quota", {}).get("max_hosted_cost_per_user_usd", 1.00))
 
     @property
     def global_daily_max_hosted_videos(self) -> int:
-        return int(os.getenv("GLOBAL_DAILY_MAX_HOSTED_VIDEOS", self._data.get("quota", {}).get("global_daily_max_hosted_videos", 50)))
+        return int(self._data.get("quota", {}).get("global_daily_max_hosted_videos", 50))
 
     @property
     def global_daily_max_hosted_cost_usd(self) -> float:
-        return float(os.getenv("GLOBAL_DAILY_MAX_HOSTED_COST_USD", self._data.get("quota", {}).get("global_daily_max_hosted_cost_usd", 5.00)))
+        return float(self._data.get("quota", {}).get("global_daily_max_hosted_cost_usd", 5.00))
 
     @property
     def session_secret_key(self) -> str:
-        return os.getenv("SESSION_SECRET_KEY", self._data.get("session_secret_key", "frametalk_hmac_secret_cinema_2026"))
+        secret = os.getenv("SESSION_SECRET_KEY")
+        if not secret or not secret.strip():
+            raise RuntimeError(
+                "CRITICAL CONFIGURATION ERROR: Missing required environment secret 'SESSION_SECRET_KEY'. "
+                "Secrets must not have hardcoded fallbacks. Please define 'SESSION_SECRET_KEY' in your .env file."
+            )
+        return secret.strip()
 
     def get_server_api_key(self) -> str:
         """Returns the server-configured Gemini/Google API key if set."""
         return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
+
+    def validate_secrets(self) -> None:
+        """Fails fast on application startup if required secrets are absent."""
+        _ = self.session_secret_key
 
 config = AppConfig()

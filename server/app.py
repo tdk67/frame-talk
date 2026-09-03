@@ -53,6 +53,11 @@ app.include_router(audio_router)
 app.include_router(telemetry_router)
 app.include_router(mcp_router)
 
+@app.on_event("startup")
+def on_startup():
+    """Fails fast on application startup if required secrets are absent in .env."""
+    config.validate_secrets()
+
 # Mount Static Directories (Output media and Public Web UI)
 # Note: uploads directory is intentionally NOT mounted statically to prevent arbitrary file enumeration
 app.mount("/output", StaticFiles(directory=str(config.output_dir)), name="output")

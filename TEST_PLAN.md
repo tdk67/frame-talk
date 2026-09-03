@@ -110,7 +110,7 @@ python -m server.evals.run_all_evals --all
 In addition to LLM model evaluations, Frame Talk includes a fast, zero-dependency unit test suite covering application code, synchronization math, API contracts, security guardrails, repositories, and quotas:
 
 ```bash
-# Run full unit test suite (45 tests, executes in < 1.5s):
+# Run full unit test suite (46 tests, executes in < 1.5s):
 python -m unittest discover tests -v
 
 # Run integrated quality build (HTML lint + unit tests):
@@ -119,14 +119,14 @@ npm test
 
 | Test Module | Coverage | Status |
 | :--- | :--- | :---: |
-| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK validation, 404 handlers, security headers, MCP endpoints, ClickHouse & Pricing | **13/13 PASS** |
+| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK validation, 404 handlers, security headers, MCP endpoints, ClickHouse & Secret Validation | **14/14 PASS** |
 | [`tests/test_chronos_engine.py`](tests/test_chronos_engine.py) | 24 kHz PCM duration math ($48\text{ bytes/ms}$), dynamic freeze calculation, $+300\text{ms}$ buffer | **4/4 PASS** |
 | [`tests/test_frontend_html_integrity.py`](tests/test_frontend_html_integrity.py) | LIFO tag stack balancing, illegal nesting blocking, wizard card hierarchy anti-bleed | **2/2 PASS** |
 | [`tests/test_quota_service.py`](tests/test_quota_service.py) | Hosted demo key limits (3 videos, $1.00 USD cost cap), IP-bound quota, Global circuit breaker | **8/8 PASS** |
 | [`tests/test_repositories.py`](tests/test_repositories.py) | `JobRepository` lifecycle, path traversal blocking, `FileRepository` validation | **5/5 PASS** |
 | [`tests/test_security_guardrails.py`](tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte validation | **5/5 PASS** |
 | [`tests/test_user_isolation.py`](tests/test_user_isolation.py) | Anonymous client pseudonymization, job ownership isolation, ClickHouse user aggregations | **8/8 PASS** |
-| **TOTAL** | **Comprehensive Build Integrity** | **45/45 PASS** |
+| **TOTAL** | **Comprehensive Build Integrity** | **46/46 PASS** |
 
 ---
 
