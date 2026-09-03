@@ -40,7 +40,7 @@ class GlobalGemini(Gemini):
 
 scriptwriter_persona_agent_google_search_agent = LlmAgent(
   name='Scriptwriter_Persona_Agent_google_search_agent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Agent specialized in performing Google searches.'
   ),
@@ -53,7 +53,7 @@ scriptwriter_persona_agent_google_search_agent = LlmAgent(
 
 scriptwriter_persona_agent_url_context_agent = LlmAgent(
   name='Scriptwriter_Persona_Agent_url_context_agent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Agent specialized in fetching content from URLs.'
   ),
@@ -66,15 +66,15 @@ scriptwriter_persona_agent_url_context_agent = LlmAgent(
 
 scriptwriterpersonaagent = LlmAgent(
   name='scriptwriterpersonaagent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
-      'Generates natural, collaborative dialogue between Alex (Lead Architect) and Sam (Dev Advocate)'
+      'Generates natural, collaborative dialogue between Alex (Lead Architect) and Sarah (Dev Advocate)'
   ),
   sub_agents=[],
   instruction=(
       'You are an elite technical podcast scriptwriter and director. Create a lively, organic, two-character live technical walkthrough conversation between two hosts:\n'
       '- Alex (Lead Systems Architect): Highly knowledgeable, direct, conversational, points out technical implementation details, architecture, and performance.\n'
-      '- Sam (Tech Co-host & Dev Advocate): Inquisitive, quick on their feet, reacts to visual UI elements in real-time, asks probing technical questions, adds natural banter.\n\n'
+      '- Sarah (Tech Co-host & Dev Advocate): Inquisitive, quick on their feet, reacts to visual UI elements in real-time, asks probing technical questions, adds natural banter.\n\n'
       'STYLE GUIDELINES:\n'
       '1. Natural Dialogue Dynamics: Hosts should react to each other, use conversational hooks, and sound like colleagues having coffee.\n'
       '2. NO Synthetic Timestamps: NEVER mention explicit timestamps or times (DO NOT SAY "at 0:14"). Reference screen actions naturally.\n'
@@ -92,7 +92,7 @@ scriptwriterpersonaagent = LlmAgent(
 
 qa_pacing_auditor_agent_google_search_agent = LlmAgent(
   name='QA_Pacing_Auditor_Agent_google_search_agent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Agent specialized in performing Google searches.'
   ),
@@ -105,7 +105,7 @@ qa_pacing_auditor_agent_google_search_agent = LlmAgent(
 
 qa_pacing_auditor_agent_url_context_agent = LlmAgent(
   name='QA_Pacing_Auditor_Agent_url_context_agent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Agent specialized in fetching content from URLs.'
   ),
@@ -118,7 +118,7 @@ qa_pacing_auditor_agent_url_context_agent = LlmAgent(
 
 qapacingauditoragent = LlmAgent(
   name='qapacingauditoragent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'QA Agent checking how well script matches video description and project details'
   ),
@@ -142,7 +142,7 @@ qapacingauditoragent = LlmAgent(
 
 frame_talk_director_google_search_agent = LlmAgent(
   name='FrameTalk_Director_google_search_agent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Agent specialized in performing Google searches.'
   ),
@@ -155,7 +155,7 @@ frame_talk_director_google_search_agent = LlmAgent(
 
 frame_talk_director_url_context_agent = LlmAgent(
   name='FrameTalk_Director_url_context_agent',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Agent specialized in fetching content from URLs.'
   ),
@@ -181,7 +181,7 @@ if HAS_MCP and McpToolset and StreamableHTTPConnectionParams:
 
 root_agent = LlmAgent(
   name='FrameTalk_Director',
-  model=GlobalGemini(model='gemini-3.5-flash'),
+  model=GlobalGemini(model='gemini-3.7-flash'),
   description=(
       'Autonomous Executive Director and Multimodal Ingestion Agent for Frame Talk. '
       'Analyzes silent developer screencasts (.mp4) and technical documentation (README.md) '
@@ -211,7 +211,7 @@ root_agent = LlmAgent(
       '2. SCRIPTWRITING DELEGATION\n'
       '- Delegate script generation to the Scriptwriter-Persona-Agent.\n'
       '- Enforce strict scene-to-turn binding (every dialogue line must attach to a valid scene_id).\n'
-      '- Mandate Alex (Systems Architect) and Sam (Dev Advocate) personas with natural banter, technical depth, and zero synthetic timestamps (e.g., forbid "at 0:14").\n'
+      '- Mandate Alex (Systems Architect) and Sarah (Dev Advocate) personas with natural banter, technical depth, and zero synthetic timestamps (e.g., forbid "at 0:14").\n'
       '- Enforce strict speech pacing: target ~2.5 words/second (150 words/minute) relative to visual scene duration.\n\n'
       '3. FORENSIC AUDIT & FEEDBACK LOOP\n'
       '- Submit generated dialogue to the QA-Pacing-Auditor-Agent.\n'

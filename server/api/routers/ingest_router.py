@@ -56,7 +56,17 @@ async def analyze_video(
         response.status_code = 200
         return {"job_id": job_id, "status": job["status"]}
 
-    # Enforce hosted key quota check (max 3 videos per user if on server key)
+    # 1. Validate that the video file actually exists in uploads/ BEFORE consuming quota
+    from server.repositories.file_repository import file_repository
+    from server.core.exceptions import ResourceNotFoundException, InvalidInputException
+    try:
+        video_path = file_repository.get_upload_path(req.video_filename)
+        if not video_path.exists() or video_path.stat().st_size == 0:
+            raise HTTPException(status_code=400, detail=f"Uploaded video file '{req.video_filename}' does not exist or is empty.")
+    except (ResourceNotFoundException, InvalidInputException) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid video file: {str(e)}")
+
+    # 2. Enforce hosted key quota check (max 3 videos per user if on server key)
     from server.services.quota_service import quota_service
     has_custom_key = bool(api_key and api_key.strip())
     has_user_id = getattr(request.state, "has_user_id", False)
@@ -68,7 +78,6 @@ async def analyze_video(
         has_user_id=has_user_id
     )
     if not allowed:
-        from fastapi import HTTPException
         status_code = 401 if not has_user_id and not has_custom_key else 429
         err_code = "AUTH_REQUIRED" if not has_user_id and not has_custom_key else "QUOTA_EXHAUSTED"
         raise HTTPException(

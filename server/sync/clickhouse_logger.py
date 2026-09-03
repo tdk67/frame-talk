@@ -122,21 +122,26 @@ class ClickHouseLogger:
 
     def log_sync_event(self,
                        session_id: str,
-                       turn_index: int,
-                       speaker: str,
-                       dialogue_text: str,
-                       audio_clip_path: str,
-                       audio_duration_ms: int,
-                       video_scene_start_ms: int,
-                       video_scene_end_ms: int,
-                       video_scene_duration_ms: int,
-                       required_freeze_ms: int,
+                       turn_index: int = 0,
+                       speaker: str = "Alex",
+                       dialogue_text: str = "",
+                       audio_clip_path: str = "",
+                       audio_duration_ms: int = 0,
+                       video_scene_start_ms: int = 0,
+                       video_scene_end_ms: int = 0,
+                       video_scene_duration_ms: int = 0,
+                       required_freeze_ms: int = 0,
                        accumulated_drift_ms: int = 0,
                        pacing_status: str = "SYNCHRONIZED",
-                       token_cost: float = 0.0) -> Dict[str, Any]:
+                       token_cost: float = 0.0,
+                       **kwargs: Any) -> Dict[str, Any]:
         """
         Logs a micro-dialogue synchronization event down to millisecond precision.
         """
+        if required_freeze_ms == 0:
+            required_freeze_ms = int(kwargs.get("freeze_duration_ms") or kwargs.get("freeze_injected_ms") or 0)
+        if not dialogue_text and "event_type" in kwargs:
+            dialogue_text = f"MCP Event: {kwargs['event_type']}"
         now = datetime.now(timezone.utc)
         event_dict = {
             "event_time": now.isoformat(),

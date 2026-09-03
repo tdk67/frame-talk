@@ -29,6 +29,8 @@ class TestApiRoutes(unittest.TestCase):
         self.assertEqual(response.headers.get("X-Frame-Options"), "SAMEORIGIN")
         self.assertEqual(response.headers.get("X-XSS-Protection"), "1; mode=block")
         self.assertEqual(response.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+        self.assertEqual(response.headers.get("Strict-Transport-Security"), "max-age=31536000; includeSubDomains")
+        self.assertIn("default-src 'self'", response.headers.get("Content-Security-Policy", ""))
 
     def test_byok_verify_empty_or_missing(self):
         """Verify /api/byok/verify rejects missing API key."""
@@ -237,6 +239,90 @@ class TestApiRoutes(unittest.TestCase):
         finally:
             if original_secret:
                 os.environ["SESSION_SECRET_KEY"] = original_secret
+
+    def test_analyze_video_nonexistent_file_rejected_without_quota_loss(self):
+        """Verify that submitting a nonexistent video file returns 400 Bad Request without consuming quota."""
+        from server.core.user_token import sign_user_id
+        from server.services.quota_service import quota_service
+        import hashlib
+        user_id = sign_user_id("usr_probe_test_no_quota_loss")
+        user_hash = hashlib.sha256(f"{user_id}:frametalk_salt".encode()).hexdigest()[:16]
+
+        # Check quota before
+        initial_status = quota_service.get_quota_status(user_hash=user_hash)
+        self.assertEqual(initial_status["videos_used"], 0)
+
+        # Submit probe with nonexistent file
+        res = self.client.post(
+            "/api/analyze-video",
+            json={
+                "video_filename": "nonexistent_screencast_file_123.mp4",
+                "readme_text": "# Test Project",
+                "video_duration_seconds": 15.0
+            },
+            headers={"X-FrameTalk-User-Id": user_id}
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("does not exist", res.json().get("detail", ""))
+
+        # Verify quota was NOT consumed
+        post_status = quota_service.get_quota_status(user_hash=user_hash)
+        self.assertEqual(post_status["videos_used"], 0)
+
+    def test_mcp_telemetry_unauthenticated_rejected(self):
+        """Verify POST /mcp log_clickhouse_telemetry without authentication returns JSON-RPC Unauthorized without HTTP 500."""
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 99,
+            "method": "tools/call",
+            "params": {
+                "name": "log_clickhouse_telemetry",
+                "arguments": {
+                    "session_id": "mcp_probe_test",
+                    "event_type": "PROBE_EVENT",
+                    "scene_id": "scene_1",
+                    "audio_duration_ms": 1500,
+                    "freeze_injected_ms": 300
+                }
+            }
+        }
+        res = self.client.post("/mcp", json=payload)
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"]["code"], -32001)
+        self.assertIn("Unauthorized", data["error"]["message"])
+
+    def test_mcp_telemetry_authenticated_success(self):
+        """Verify POST /mcp log_clickhouse_telemetry with valid session token succeeds cleanly with no HTTP 500."""
+        from server.core.user_token import sign_user_id
+        user_id = sign_user_id("usr_mcp_auth_tester")
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 100,
+            "method": "tools/call",
+            "params": {
+                "name": "log_clickhouse_telemetry",
+                "arguments": {
+                    "session_id": "mcp_success_session",
+                    "event_type": "MCP_SYNTH",
+                    "scene_id": "scene_1",
+                    "audio_duration_ms": 2500,
+                    "freeze_injected_ms": 400
+                }
+            }
+        }
+        res = self.client.post(
+            "/mcp",
+            json=payload,
+            headers={"X-FrameTalk-User-Id": user_id}
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertNotIn("error", data)
+        self.assertIn("result", data)
+        self.assertFalse(data["result"]["isError"])
+        self.assertIn("Successfully streamed", data["result"]["content"][0]["text"])
 
 if __name__ == "__main__":
     unittest.main()

@@ -84,6 +84,20 @@ class PureASGIUserContextMiddleware:
                 resp_headers.append((b"x-frame-options", b"SAMEORIGIN"))
                 resp_headers.append((b"x-xss-protection", b"1; mode=block"))
                 resp_headers.append((b"referrer-policy", b"strict-origin-when-cross-origin"))
+                resp_headers.append((b"strict-transport-security", b"max-age=31536000; includeSubDomains"))
+                csp_policy = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "font-src 'self' https://fonts.gstatic.com data:; "
+                    "img-src 'self' data: blob:; "
+                    "media-src 'self' blob:; "
+                    "connect-src 'self'; "
+                    "frame-ancestors 'self'; "
+                    "object-src 'none'; "
+                    "base-uri 'self';"
+                )
+                resp_headers.append((b"content-security-policy", csp_policy.encode("utf-8")))
                 message["headers"] = resp_headers
             await send(message)
 

@@ -18,7 +18,7 @@
 3. **Robotic Gaps vs. Continuous Dialogue:** Old tools insert 5–10s of dead silence buffers between turns to force speech into guessed timestamps, resulting in awkward, robotic ping-pong monologues.
 
 ### 💡 The Frame Talk Innovation
-* **Google Cloud Agent Platform & ADK:** Multi-agent director architecture (`FrameTalk_Director`, deployed as `agent_1788438917580` on `agentic-cinema-frametalk`, `us-west1`) running via the Google Agent Development Kit (ADK v2.7.1) with Model Context Protocol (MCP) toolsets at `/mcp`.
+* **Google Cloud Agent Platform & ADK Export:** Autonomous director agent specification (`agent.py`, exportable as `FrameTalk_Director` via Google ADK v2.8.0) interfacing with the Chronos engine via Model Context Protocol (`/mcp`), coupled with an in-process async engine (`server/agents/`) optimized for zero-latency pipeline execution.
 * **Enterprise Anti-Prompt Injection Scope Lock:** Hardened input sanitization and prompt injection shields with XML isolation boundaries (`<untrusted_documentation>`) and automatic refusal gates (`ACCESS DENIED`) on jailbreak or out-of-scope prompts.
 * **Gemini 3.7 Flash Multimodal Comprehension:** Ingests raw `.mp4` video pixels directly via the Gemini File API, cross-referencing visual clicks, inputs, and state changes with `README.md` documentation.
 * **The Chronos Sync Engine:** Dialogue lines are synthesized into uncompressed 24 kHz 16-bit Mono PCM via **`gemini-3.1-flash-tts-preview`**, measuring runtime duration down to the millisecond ($\text{duration\_ms} = \text{pcm\_bytes} / 48$).
@@ -160,14 +160,14 @@ npm test
 
 | Test Module | Coverage | Status |
 | :--- | :--- | :---: |
-| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK validation, 404 handlers, security headers, MCP endpoints, ClickHouse & Secret Validation | **14/14 PASS** |
+| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK, security headers (HSTS, CSP), MCP auth & telemetry, non-existent file quota preservation | **17/17 PASS** |
 | [`tests/test_chronos_engine.py`](tests/test_chronos_engine.py) | 24 kHz PCM duration math ($48\text{ bytes/ms}$), dynamic freeze calculation, $+300\text{ms}$ buffer | **4/4 PASS** |
 | [`tests/test_frontend_html_integrity.py`](tests/test_frontend_html_integrity.py) | LIFO tag stack balancing, illegal nesting blocking, wizard card hierarchy anti-bleed | **2/2 PASS** |
 | [`tests/test_quota_service.py`](tests/test_quota_service.py) | Hosted demo key limits (3 videos, $1.00 USD cost cap), IP-bound quota, Global circuit breaker | **8/8 PASS** |
 | [`tests/test_repositories.py`](tests/test_repositories.py) | `JobRepository` lifecycle, path traversal blocking, `FileRepository` validation | **5/5 PASS** |
 | [`tests/test_security_guardrails.py`](tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte validation | **5/5 PASS** |
 | [`tests/test_user_isolation.py`](tests/test_user_isolation.py) | Anonymous client pseudonymization, job ownership isolation, ClickHouse user aggregations | **8/8 PASS** |
-| **TOTAL** | **Comprehensive Build Integrity** | **46/46 PASS** |
+| **TOTAL** | **Comprehensive Build Integrity** | **49/49 PASS** |
 
 ### 2. Multi-Stage AI Evaluation Suite (`server/evals/`)
 Evaluates Gemini models and the Google Cloud Agent Platform Director against the reference dataset ([`server/evals/dataset/`](server/evals/dataset/)):

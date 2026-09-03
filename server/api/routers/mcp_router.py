@@ -99,8 +99,19 @@ MCP_TOOLS = [
     }
 ]
 
-def handle_mcp_call(method: str, params: Dict[str, Any], msg_id: Any) -> Dict[str, Any]:
-    """Processes MCP JSON-RPC 2.0 requests."""
+def handle_mcp_call(method: str, params: Dict[str, Any], msg_id: Any, request: Optional[Request] = None) -> Dict[str, Any]:
+    """Processes MCP JSON-RPC 2.0 requests with exception safety."""
+    try:
+        return _handle_mcp_call_internal(method, params, msg_id, request=request)
+    except Exception as e:
+        logger.exception(f"Unhandled error in MCP call '{method}': {e}")
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": {"code": -32603, "message": f"Internal MCP Server Error: {str(e)}"}
+        }
+
+def _handle_mcp_call_internal(method: str, params: Dict[str, Any], msg_id: Any, request: Optional[Request] = None) -> Dict[str, Any]:
     if method == "initialize":
         return {
             "jsonrpc": "2.0",
@@ -164,11 +175,32 @@ def handle_mcp_call(method: str, params: Dict[str, Any], msg_id: Any) -> Dict[st
             }
 
         if tool_name == "log_clickhouse_telemetry":
+            # 1. Authentication gate: requires signed session token, Bearer/API key header, or inline api_key
+            is_authenticated = False
+            if request:
+                has_user_id = getattr(request.state, "has_user_id", False)
+                auth_header = request.headers.get("authorization", "")
+                api_key_header = request.headers.get("x-api-key", "")
+                if has_user_id or auth_header or api_key_header:
+                    is_authenticated = True
+            if args.get("api_key") or args.get("auth_token"):
+                is_authenticated = True
+
+            if not is_authenticated:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": msg_id,
+                    "error": {
+                        "code": -32001,
+                        "message": "Unauthorized: log_clickhouse_telemetry requires authentication via X-FrameTalk-User-Id session token, Authorization header, or X-API-Key."
+                    }
+                }
+
             session_id = str(args.get("session_id", "mcp_session")).strip()
             event_type = str(args.get("event_type", "MCP_EVENT")).strip()
             scene_id = str(args.get("scene_id", "scene_1")).strip()
             audio_dur = int(args.get("audio_duration_ms", 0))
-            freeze_dur = int(args.get("freeze_injected_ms", 0))
+            freeze_dur = int(args.get("freeze_injected_ms", args.get("freeze_duration_ms", 0)))
 
             # Input validation and bounds checking to prevent database poisoning
             import re
@@ -186,13 +218,18 @@ def handle_mcp_call(method: str, params: Dict[str, Any], msg_id: Any) -> Dict[st
 
             telemetry_repository.log_sync_event(
                 session_id=session_id,
-                scene_id=scene_id,
-                audio_chunk_id="mcp_chunk",
+                turn_index=int(args.get("turn_index", 0)),
+                speaker=str(args.get("speaker", "Alex")).strip(),
+                dialogue_text=str(args.get("dialogue_text", f"MCP Event {event_type} on {scene_id}")).strip(),
+                audio_clip_path=str(args.get("audio_clip_path", f"{session_id}_{scene_id}.pcm")).strip(),
                 audio_duration_ms=audio_dur,
-                video_scene_duration_ms=audio_dur - freeze_dur,
-                freeze_duration_ms=freeze_dur,
-                drift_delta_ms=0,
-                status="SYNCED"
+                video_scene_start_ms=int(args.get("video_scene_start_ms", 0)),
+                video_scene_end_ms=int(args.get("video_scene_end_ms", audio_dur)),
+                video_scene_duration_ms=int(args.get("video_scene_duration_ms", max(0, audio_dur - freeze_dur))),
+                required_freeze_ms=freeze_dur,
+                accumulated_drift_ms=0,
+                pacing_status="SYNCHRONIZED" if freeze_dur == 0 else "HOLD_INJECTED",
+                token_cost=0.0
             )
             return {
                 "jsonrpc": "2.0",
@@ -253,7 +290,7 @@ async def mcp_post_endpoint(request: Request):
     params = data.get("params", {})
     msg_id = data.get("id")
 
-    res = handle_mcp_call(method, params, msg_id)
+    res = handle_mcp_call(method, params, msg_id, request=request)
     return JSONResponse(res)
 
 @router.get("/mcp")
