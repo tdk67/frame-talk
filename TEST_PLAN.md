@@ -20,15 +20,15 @@ This document defines the formal Evaluation Framework (Evals) and End-to-End Ver
 
 ## 🔬 Multi-Stage Decoupled Evaluation Protocol (Evals)
 
-Frame Talk uses a **three-stage decoupled evaluation architecture** with a predefined ground-truth dataset (`evals/dataset/`):
-* `evals/dataset/expected_scenes.json`: 9-scene gold-standard ground truth extracted from the reference PDF.
-* `evals/dataset/expected_dialogue.json`: High-cadence reference dialogue between Mark and Sarah.
-* `evals/dataset/sample_readme.md`: Idea Lint architecture documentation.
+Frame Talk uses a **four-stage decoupled evaluation architecture** with a predefined ground-truth dataset (`server/evals/dataset/`):
+* `server/evals/dataset/expected_scenes.json`: 9-scene gold-standard ground truth extracted from the reference screencast.
+* `server/evals/dataset/expected_dialogue.json`: High-cadence reference dialogue between Alex and Sarah.
+* `server/evals/dataset/sample_readme.md`: Idea Lint architecture documentation.
 
 ---
 
 ### Stage 1: Video Analyzer Evaluation (Dataset Grounding & Precision)
-* **Evaluator Script:** [`server/evals/eval_1_video_analyzer.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/server/evals/eval_1_video_analyzer.py)
+* **Evaluator Script:** [`server/evals/eval_1_video_analyzer.py`](server/evals/eval_1_video_analyzer.py)
 * **Objective:** Compares generated scene decomposition against the predefined ground-truth dataset.
 * **CLI Command:** `python -m server.evals.eval_1_video_analyzer --benchmark`
 
@@ -42,7 +42,7 @@ Frame Talk uses a **three-stage decoupled evaluation architecture** with a prede
 ---
 
 ### Stage 2: Dialogue Script Generation Evaluation (Visuals + README)
-* **Evaluator Script:** [`server/evals/eval_2_dialogue_script.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/server/evals/eval_2_dialogue_script.py)
+* **Evaluator Script:** [`server/evals/eval_2_dialogue_script.py`](server/evals/eval_2_dialogue_script.py)
 * **Objective:** Evaluates dialogue generation given known visual scenes and README documentation.
 * **CLI Command:** `python -m server.evals.eval_2_dialogue_script --benchmark`
 
@@ -51,13 +51,13 @@ Frame Talk uses a **three-stage decoupled evaluation architecture** with a prede
 | **Visual Scene Anchoring** | $\ge 85\%$ | Validates that dialogue turns in Scene $N$ discuss observed elements in Scene $N$. | Talking about a modal or feature before it appears. |
 | **README Concepts Grounding** | $\ge 80\%$ | Verifies coverage of architecture concepts (*courtroom*, *adversarial*, *byok*, *privacy*, *decision gate*). | Omission of core technical principles. |
 | **Anti-Timestamp Constraint** | **100% Pass** | Regex scan for explicit time utterances (`\b\d{1,2}:\d{2}\b`, *"at 0:15"*, *"at 1 minute"*). | Any spoken explicit timestamp reference. |
-| **Conversational Cadence** | $\ge 90\%$ | Turn-taking alternation ratio and speaker balance between Mark and Sarah. | Monologues or consecutive turns by the same speaker. |
+| **Conversational Cadence** | $\ge 90\%$ | Turn-taking alternation ratio and speaker balance between Alex and Sarah. | Monologues or consecutive turns by the same speaker. |
 | **Overall Stage 2 Score** | $\ge 80/100$ | Weighted composite: Anchoring (35%) + README (30%) + Cadence (20%) + Anti-Timestamp (15%). | Score $< 80$ or any timestamp uttered. |
 
 ---
 
 ### Stage 3: QA & Pacing Auditor Evaluation (Sensitivity & Discrimination)
-* **Evaluator Script:** [`server/evals/eval_3_qa_auditor.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/server/evals/eval_3_qa_auditor.py)
+* **Evaluator Script:** [`server/evals/eval_3_qa_auditor.py`](server/evals/eval_3_qa_auditor.py)
 * **Objective:** Evaluates the QA Agent itself via dual benchmark batteries (positive verification + defect injection).
 * **CLI Command:** `python -m server.evals.eval_3_qa_auditor`
 
@@ -69,8 +69,22 @@ Frame Talk uses a **three-stage decoupled evaluation architecture** with a prede
 
 ---
 
+### Stage 4: Google Cloud Agent Platform Director Evaluation (ADK & Guardrails)
+* **Evaluator Script:** [`server/evals/eval_4_gcp_director.py`](server/evals/eval_4_gcp_director.py)
+* **Objective:** Validates `agent.py` running on Google ADK v2.7.1, anti-prompt injection scope lock, and Chronos dynamic hold calculations.
+* **CLI Command:** `python -m server.evals.eval_4_gcp_director`
+
+| Eval Metric | Target | Measurement Method | Failure Criteria |
+| :--- | :--- | :--- | :--- |
+| **ADK Export Integrity** | $100\%$ | Verifies `root_agent` export and subagent bindings in ADK. | Missing `root_agent` or broken persona agents. |
+| **Anti-Injection Refusal** | $100\%$ | Injects jailbreak prompts; verifies `ACCESS DENIED` response. | Following adversarial override directives. |
+| **Chronos Calculation Math** | $100\%$ | Evaluates freeze hold formulas and $+300\text{ms}$ buffer hold. | Calculation drift or missing hold duration. |
+| **Overall Director Score** | $\ge 80/100$ | Composite score across ADK structure, security, and sync. | Score $< 80$. |
+
+---
+
 ### 🚀 Master Evaluation Suite Runner
-Run all 3 stages consecutively with a unified scorecard:
+Run all 4 stages consecutively with a unified scorecard:
 ```bash
 python -m server.evals.run_all_evals --all
 ```
@@ -93,19 +107,26 @@ python -m server.evals.run_all_evals --all
 
 ## 🧪 Automated Unit Test Suite (`tests/`)
 
-In addition to LLM model evaluations, Frame Talk includes a fast, zero-dependency unit test suite covering application code, synchronization math, API contracts, security guardrails, and repositories:
+In addition to LLM model evaluations, Frame Talk includes a fast, zero-dependency unit test suite covering application code, synchronization math, API contracts, security guardrails, repositories, and quotas:
 
 ```bash
-# Run all unit tests (21 tests, executes in ~0.5s):
+# Run full unit test suite (45 tests, executes in < 1.5s):
 python -m unittest discover tests -v
+
+# Run integrated quality build (HTML lint + unit tests):
+npm test
 ```
 
 | Test Module | Coverage | Status |
-| :--- | :--- | :--- |
-| [`tests/test_api_routes.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_api_routes.py) | Health endpoint, BYOK validation, 404 handlers, HTTP security headers (`X-Content-Type-Options`, `X-Frame-Options`), ClickHouse event endpoints | **PASS** (8/8) |
-| [`tests/test_chronos_engine.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_chronos_engine.py) | 24 kHz PCM duration math ($48\text{ bytes/ms}$), dynamic freeze calculations, $+300\text{ms}$ visual buffer holds, multi-scene timeline chaining | **PASS** (4/4) |
-| [`tests/test_repositories.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_repositories.py) | `JobRepository` lifecycle (PENDING -> COMPLETED), path traversal blocking, `FileRepository` validation, in-memory telemetry buffering | **PASS** (5/5) |
-| [`tests/test_security_guardrails.py`](file:///c:/Data/work/genAI/BlockbusterHackaton/tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte container header validation | **PASS** (4/4) |
+| :--- | :--- | :---: |
+| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK validation, 404 handlers, security headers, MCP endpoints, ClickHouse & Pricing | **13/13 PASS** |
+| [`tests/test_chronos_engine.py`](tests/test_chronos_engine.py) | 24 kHz PCM duration math ($48\text{ bytes/ms}$), dynamic freeze calculation, $+300\text{ms}$ buffer | **4/4 PASS** |
+| [`tests/test_frontend_html_integrity.py`](tests/test_frontend_html_integrity.py) | LIFO tag stack balancing, illegal nesting blocking, wizard card hierarchy anti-bleed | **2/2 PASS** |
+| [`tests/test_quota_service.py`](tests/test_quota_service.py) | Hosted demo key limits (3 videos, $1.00 USD cost cap), IP-bound quota, Global circuit breaker | **8/8 PASS** |
+| [`tests/test_repositories.py`](tests/test_repositories.py) | `JobRepository` lifecycle, path traversal blocking, `FileRepository` validation | **5/5 PASS** |
+| [`tests/test_security_guardrails.py`](tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte validation | **5/5 PASS** |
+| [`tests/test_user_isolation.py`](tests/test_user_isolation.py) | Anonymous client pseudonymization, job ownership isolation, ClickHouse user aggregations | **8/8 PASS** |
+| **TOTAL** | **Comprehensive Build Integrity** | **45/45 PASS** |
 
 ---
 
