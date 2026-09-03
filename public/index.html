@@ -4,28 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frame Talk: Multimodal Screen-to-Podcast Engine</title>
+    <meta name="description" content="Turn silent developer screencasts into an engaging, perfectly synchronized two-host podcast video using Gemini 3.7 Flash and Chronos timeline stretching.">
+    <meta name="keywords" content="Frame Talk, Gemini 3.7 Flash, Chronos sync, screencast to podcast, video walkthrough, developer tools, AI video, multimodal">
+    <meta name="author" content="Frame Talk Studio">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0C2A4A">
+    <link rel="canonical" href="https://frame-talk.taskmind-ai.com/">
+
+    <!-- Open Graph / Social Media Preview -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://frame-talk.taskmind-ai.com/">
+    <meta property="og:title" content="Frame Talk: Multimodal Screen-to-Podcast Engine">
+    <meta property="og:description" content="Turn silent developer screencasts into synchronized two-host podcast walkthroughs using gemini-3.7-flash and Chronos timeline stretching.">
+    <meta property="og:image" content="https://frame-talk.taskmind-ai.com/og-preview.png">
+    <meta property="og:site_name" content="Frame Talk">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Frame Talk: Multimodal Screen-to-Podcast Engine">
+    <meta name="twitter:description" content="Turn silent developer screencasts into synchronized two-host podcast walkthroughs using gemini-3.7-flash and Chronos timeline stretching.">
+    <meta name="twitter:image" content="https://frame-talk.taskmind-ai.com/og-preview.png">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Frame Talk",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Bring-Your-Own-Key (BYOK) with Gemini 3.7 Flash free tier"
+      },
+      "description": "Turn silent developer screencasts into an engaging, perfectly synchronized two-host podcast video using gemini-3.7-flash and Chronos timeline stretching."
+    }
+    </script>
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
     <!-- Style Sheets (Bricolage Grotesque, Caveat & Cream Theme) -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- Accessible Skip Link -->
+    <a href="#main-wizard-content" class="skip-link">Skip to main content</a>
+
     <!-- Header Navigation -->
-    <header>
+    <header role="banner">
         <div class="nav-container">
-            <a href="#" class="logo">
-                <span class="logo-icon">F</span>
+            <a href="#" class="logo" aria-label="Frame Talk Studio Home">
+                <span class="logo-icon" aria-hidden="true">F</span>
                 <span class="logo-text">Frame Talk</span>
             </a>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);">
-                    <span class="status-dot" style="background:#4ade80;">●</span> <span>gemini-3.7-flash</span>
+            <div style="display: flex; align-items: center; gap: 0.75rem;" role="toolbar" aria-label="Engine status and credentials">
+                <div class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);" aria-label="Vision Model: gemini-3.7-flash active">
+                    <span class="status-dot" style="background:#4ade80;" aria-hidden="true">●</span> <span>gemini-3.7-flash</span>
                 </div>
-                <div id="clickhouse-status-badge" class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);">
-                    <span class="status-dot" style="background:#60a5fa;">●</span> <span id="clickhouse-status-text">ClickHouse Ready</span>
+                <div id="clickhouse-status-badge" class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);" aria-label="Observability: ClickHouse status">
+                    <span class="status-dot" style="background:#60a5fa;" aria-hidden="true">●</span> <span id="clickhouse-status-text">ClickHouse Ready</span>
                 </div>
-                <div id="api-status-badge" class="api-badge unconfigured" onclick="openKeyModal()">
-                    <span class="status-dot">●</span> <span id="api-status-text">Set API Key</span>
+                <div id="api-status-badge" class="api-badge unconfigured" onclick="openKeyModal()" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Configure Google Gemini API key" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openKeyModal();}">
+                    <span class="status-dot" aria-hidden="true">●</span> <span id="api-status-text">Set API Key</span>
                 </div>
             </div>
         </div>
@@ -101,7 +143,7 @@
         </aside>
 
         <!-- Main Column (Wizard & Cards) -->
-        <main class="main-content">
+        <main class="main-content" id="main-wizard-content" tabindex="-1">
             <!-- Hero Section -->
             <section class="hero">
                 <h1>Frame Talk: Screencast to <span class="handwritten">podcast walkthrough!</span></h1>
@@ -109,26 +151,26 @@
             </section>
 
             <!-- Steps Navigation -->
-            <nav class="steps-nav">
-                <button id="tab-step-1" class="step-tab active" onclick="navigateToStep(1)">
-                    <span class="step-number">1</span> Upload Files
+            <nav class="steps-nav" role="tablist" aria-label="Studio Workflow Steps">
+                <button id="tab-step-1" class="step-tab active" role="tab" aria-selected="true" aria-controls="step-card-1" onclick="navigateToStep(1)">
+                    <span class="step-number" aria-hidden="true">1</span> Upload Files
                 </button>
-                <button id="tab-step-2" class="step-tab" onclick="navigateToStep(2)" disabled>
-                    <span class="step-number">2</span> UI Scenes
+                <button id="tab-step-2" class="step-tab" role="tab" aria-selected="false" aria-controls="step-card-2" onclick="navigateToStep(2)" disabled>
+                    <span class="step-number" aria-hidden="true">2</span> UI Scenes
                 </button>
-                <button id="tab-step-3" class="step-tab" onclick="navigateToStep(3)" disabled>
-                    <span class="step-number">3</span> Podcast Script
+                <button id="tab-step-3" class="step-tab" role="tab" aria-selected="false" aria-controls="step-card-3" onclick="navigateToStep(3)" disabled>
+                    <span class="step-number" aria-hidden="true">3</span> Podcast Script
                 </button>
-                <button id="tab-step-4" class="step-tab" onclick="navigateToStep(4)" disabled>
-                    <span class="step-number">4</span> Voice & Chronos
+                <button id="tab-step-4" class="step-tab" role="tab" aria-selected="false" aria-controls="step-card-4" onclick="navigateToStep(4)" disabled>
+                    <span class="step-number" aria-hidden="true">4</span> Voice & Chronos
                 </button>
-                <button id="tab-step-5" class="step-tab" onclick="navigateToStep(5)" disabled>
-                    <span class="step-number">5</span> Studio Sync
+                <button id="tab-step-5" class="step-tab" role="tab" aria-selected="false" aria-controls="step-card-5" onclick="navigateToStep(5)" disabled>
+                    <span class="step-number" aria-hidden="true">5</span> Studio Sync
                 </button>
             </nav>
 
             <!-- Step 1: Upload Zone -->
-            <div id="step-card-1" class="wizard-card active">
+            <div id="step-card-1" class="wizard-card active" role="tabpanel" tabindex="0" aria-labelledby="tab-step-1">
                 <h2>Frame Talk Studio Ingestion</h2>
                 
                 <!-- How it works -->
@@ -173,22 +215,22 @@
 
                 <!-- Video Dropzone -->
                 <div class="form-group">
-                    <label>1. Screen Capture Video File (.mp4, .webm)</label>
-                    <div id="video-dropzone" class="dropzone" onclick="document.getElementById('video-input').click()">
-                        <div class="dropzone-icon">📹</div>
-                        <div class="dropzone-text">Drag and drop your video file here, or click to browse</div>
-                        <input type="file" id="video-input" accept="video/mp4,video/webm" style="display: none;">
+                    <label for="video-input">1. Screen Capture Video File (.mp4, .webm)</label>
+                    <div id="video-dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload Screen Capture Video File (.mp4 or .webm)" onclick="document.getElementById('video-input').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); document.getElementById('video-input').click();}">
+                        <div class="dropzone-icon" aria-hidden="true">📹</div>
+                        <div class="dropzone-text">Drag and drop your video file here, or press <kbd style="font-family: inherit; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">Enter</kbd> to browse</div>
+                        <input type="file" id="video-input" accept="video/mp4,video/webm" style="display: none;" aria-hidden="true">
                     </div>
                     <div id="video-file-list" class="file-list"></div>
                 </div>
 
                 <!-- README Dropzone -->
                 <div class="form-group">
-                    <label>2. Project README.md File (.md or .txt)</label>
-                    <div id="readme-dropzone" class="dropzone" onclick="document.getElementById('readme-input').click()">
-                        <div class="dropzone-icon">📄</div>
-                        <div class="dropzone-text">Drag and drop your README file here, or click to browse</div>
-                        <input type="file" id="readme-input" accept=".md,.txt" style="display: none;">
+                    <label for="readme-input">2. Project README.md File (.md or .txt)</label>
+                    <div id="readme-dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload Project README.md File (.md or .txt)" onclick="document.getElementById('readme-input').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); document.getElementById('readme-input').click();}">
+                        <div class="dropzone-icon" aria-hidden="true">📄</div>
+                        <div class="dropzone-text">Drag and drop your README file here, or press <kbd style="font-family: inherit; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">Enter</kbd> to browse</div>
+                        <input type="file" id="readme-input" accept=".md,.txt" style="display: none;" aria-hidden="true">
                     </div>
                     <div id="readme-file-list" class="file-list"></div>
                 </div>
@@ -238,12 +280,12 @@
             </div>
 
             <!-- Step 2: UI Action Transcript & Scenes -->
-            <div id="step-card-2" class="wizard-card">
+            <div id="step-card-2" class="wizard-card" role="tabpanel" tabindex="0" aria-labelledby="tab-step-2">
                 <h2>Multimodal Visual Scenes Timeline</h2>
                 <p style="color: var(--color-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
                     gemini-3.7-flash parsed your screencast pixels and mapped UI states to your README documentation.
                 <!-- Video Description Precision & Grounding Audit -->
-                <div id="video-eval-section" class="qa-report-card" style="display: none; margin-bottom: 1.5rem;">
+                <div id="video-eval-section" class="qa-report-card" style="display: none; margin-bottom: 1.5rem;" aria-label="Video Grounding Evaluation">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                         <h3 style="font-family: var(--font-display); color: var(--color-navy); font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
                             🛡️ Video Description Precision & Grounding Eval
@@ -278,13 +320,13 @@
                 </div>
 
                 <div class="table-container">
-                    <table class="transcript-table">
+                    <table class="transcript-table" aria-label="Visual Scene Timeline Table">
                         <thead>
                             <tr>
-                                <th style="width: 110px;">Window</th>
-                                <th style="width: 33%;">On Screen</th>
-                                <th style="width: 28%;">User Action</th>
-                                <th style="width: 28%;">App Reaction</th>
+                                <th scope="col" style="width: 110px;">Window</th>
+                                <th scope="col" style="width: 33%;">On Screen</th>
+                                <th scope="col" style="width: 28%;">User Action</th>
+                                <th scope="col" style="width: 28%;">App Reaction</th>
                             </tr>
                         </thead>
                         <tbody id="transcript-table-body">
@@ -293,8 +335,8 @@
                     </table>
                 </div>
 
-                <div class="loading-overlay" id="loading-step-2">
-                    <div class="spinner"></div>
+                <div class="loading-overlay" id="loading-step-2" role="status" aria-live="polite" aria-atomic="true">
+                    <div class="spinner" aria-hidden="true"></div>
                     <div class="progress-container" style="width: 80%; max-width: 300px; margin: 0.75rem 0; background: var(--color-border); border-radius: 4px; height: 6px; overflow: hidden;">
                         <div class="progress-bar" id="progress-bar-step-2" style="height: 100%; background: var(--color-blue); width: 0%; transition: width 0.3s ease;"></div>
                     </div>
@@ -310,18 +352,18 @@
             </div>
 
             <!-- Step 3: Script Drafting & QA Audit -->
-            <div id="step-card-3" class="wizard-card">
+            <div id="step-card-3" class="wizard-card" role="tabpanel" tabindex="0" aria-labelledby="tab-step-3">
                 <h2>Podcast Dialogue Script</h2>
                 <p style="color: var(--color-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
                     Our AI dialogue scriptwriter crafted a snappy, natural conversation between Mark and Sarah tied to each visual scene.
                 </p>
 
-                <div id="script-lines-container">
+                <div id="script-lines-container" aria-label="Generated podcast dialogue turns">
                     <!-- Dynamic script lines -->
                 </div>
 
-                <div class="loading-overlay" id="loading-step-3">
-                    <div class="spinner"></div>
+                <div class="loading-overlay" id="loading-step-3" role="status" aria-live="polite" aria-atomic="true">
+                    <div class="spinner" aria-hidden="true"></div>
                     <div class="progress-text">Drafting live dialogue script with gemini-3.7-flash...</div>
                 </div>
 
@@ -373,19 +415,15 @@
 
                 <div class="button-group" style="margin-top: 2rem;">
                     <button class="btn btn-secondary" onclick="prevStep()">Back</button>
-                    <button class="btn btn-primary" onclick="navigateToStep(4)">Proceed to Voice & Chronos ➔</button>
-                </div>
-            </div>
-
-            <!-- Step 4: Voice Configuration & Chronos -->
-            <div id="step-card-4" class="wizard-card">
+                    <button class="btn btn-primary" onclick="navigateToStep(4)">Proceed            <!-- Step 4: Voice Configuration & Chronos -->
+            <div id="step-card-4" class="wizard-card" role="tabpanel" tabindex="0" aria-labelledby="tab-step-4">
                 <h2>Configure Voices & Chronos Sync Engine</h2>
                 <div class="note-bubble">
                     <p class="note-bubble-text">💡 Voice Engine: gemini-3.1-flash-tts-preview returns 24kHz PCM. Chronos calculates the exact millisecond duration of each spoken phrase to dynamically stretch video frames.</p>
                 </div>
 
-                <div class="loading-overlay" id="loading-step-4">
-                    <div class="spinner"></div>
+                <div class="loading-overlay" id="loading-step-4" role="status" aria-live="polite" aria-atomic="true">
+                    <div class="spinner" aria-hidden="true"></div>
                     <div class="progress-container" style="width: 80%; max-width: 300px; margin: 0.75rem 0; background: var(--color-border); border-radius: 4px; height: 6px; overflow: hidden;">
                         <div class="progress-bar" id="progress-bar-step-4" style="height: 100%; background: var(--color-blue); width: 0%; transition: width 0.3s ease;"></div>
                     </div>
@@ -396,7 +434,7 @@
                     <!-- Host A Settings -->
                     <div class="voice-card">
                         <div class="voice-card-header">
-                            <div class="voice-gender-icon">👨</div>
+                            <div class="voice-gender-icon" aria-hidden="true">👨</div>
                             <div>
                                 <div class="voice-card-title">Host A (Male Speaker)</div>
                                 <span class="help-text">Assigned to Mark</span>
@@ -410,7 +448,7 @@
                                     <option value="Charon">Charon (Deep Male)</option>
                                     <option value="Fenrir">Fenrir (Alternative Male)</option>
                                 </select>
-                                <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="window.testVoice('host-a-voice-select')">Test 🔊</button>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="window.testVoice('host-a-voice-select')" aria-label="Test Host A voice sample">Test 🔊</button>
                             </div>
                         </div>
                     </div>
@@ -418,7 +456,7 @@
                     <!-- Host B Settings -->
                     <div class="voice-card">
                         <div class="voice-card-header">
-                            <div class="voice-gender-icon">👩</div>
+                            <div class="voice-gender-icon" aria-hidden="true">👩</div>
                             <div>
                                 <div class="voice-card-title">Host B (Female Speaker)</div>
                                 <span class="help-text">Assigned to Sarah</span>
@@ -432,7 +470,7 @@
                                     <option value="Aoede">Aoede (Clear Female)</option>
                                     <option value="Leda">Leda (Youthful Female)</option>
                                 </select>
-                                <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="window.testVoice('host-b-voice-select')">Test 🔊</button>
+                                <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="window.testVoice('host-b-voice-select')" aria-label="Test Host B voice sample">Test 🔊</button>
                             </div>
                         </div>
                     </div>
@@ -445,18 +483,18 @@
                 </div>
 
                 <div id="podcast-audio-preview-section" class="audio-player-container" style="display: none; margin-top: 1.5rem;">
-                    <label style="margin-bottom: 0.25rem;">Concatenated Podcast Audio Preview</label>
+                    <label for="podcast-audio-player" style="margin-bottom: 0.25rem;">Concatenated Podcast Audio Preview</label>
                     <audio id="podcast-audio-player" controls style="width: 100%;"></audio>
                 </div>
 
                 <div class="button-group">
                     <button class="btn btn-secondary" onclick="prevStep()">Back</button>
-                    <button class="btn btn-primary" id="btn-to-step-5" onclick="goToMergeStep()" disabled>Proceed to Synchronized Studio ➜</button>
+                    <button class="btn btn-primary" id="btn-to-step-5" onclick="goToMergeStep()" disabled>Proceed to Synchronized Studio ➔</button>
                 </div>
             </div>
 
             <!-- Step 5: Synchronized Studio Player & Capture -->
-            <div id="step-card-5" class="wizard-card">
+            <div id="step-card-5" class="wizard-card" role="tabpanel" tabindex="0" aria-labelledby="tab-step-5">
                 <div style="text-align: center; margin-bottom: 1.5rem; position: relative;">
                     <p style="font-family: var(--font-sans); font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; font-weight: 600;">STEP 5: SYNCHRONIZED STUDIO</p>
                     <h2 style="justify-content: center; font-size: 2.4rem; margin-bottom: 0.5rem;">Frame Talk <span style="font-style: italic;">Studio Monitor</span></h2>
@@ -596,10 +634,10 @@
     </div>
 
     <!-- Key Validation Modal -->
-    <div id="key-modal" class="modal-overlay">
+    <div id="key-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title-key" aria-describedby="modal-desc-key" aria-hidden="true">
         <div class="modal-card">
-            <h2 style="margin-bottom: 1rem;">Configure API Key</h2>
-            <p style="color: var(--color-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+            <h2 id="modal-title-key" style="margin-bottom: 1rem;">Configure API Key</h2>
+            <p id="modal-desc-key" style="color: var(--color-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
                 Enter your Google Gemini API key (starts with AIzaSy). It is stored securely in your browser's localStorage.
             </p>
             <p style="color: var(--color-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">

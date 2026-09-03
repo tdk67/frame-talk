@@ -488,3 +488,154 @@ select:focus {
 .modal-overlay.active .modal-card {
     transform: translateY(0);
 }
+
+/* ==========================================================================
+   Accessibility: Skip Link & Global Focus Indicators
+   ========================================================================== */
+.skip-link {
+    position: absolute;
+    top: -70px;
+    left: 1.5rem;
+    background: var(--color-navy);
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    z-index: 10000;
+    text-decoration: none;
+    box-shadow: 0 10px 25px rgba(12, 42, 74, 0.4);
+    border: 2px solid #ffffff;
+    transition: top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skip-link:focus {
+    top: 1.25rem;
+    outline: none;
+}
+
+/* High-contrast keyboard focus indicators */
+:focus-visible {
+    outline: 2px solid var(--color-blue) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 4px rgba(46, 111, 184, 0.25) !important;
+}
+
+/* Dropzone focus ring for keyboard tab navigation */
+.dropzone:focus-visible,
+.upload-dropzone:focus-visible {
+    border-color: var(--color-blue) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    outline: 2px solid var(--color-blue) !important;
+    outline-offset: 4px !important;
+    box-shadow: 0 8px 24px rgba(46, 111, 184, 0.25) !important;
+}
+
+.api-badge:focus-visible {
+    outline: 2px solid #ffffff !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(46, 111, 184, 0.5) !important;
+}
+
+/* ==========================================================================
+   Toast Notification System (Accessible & Glassmorphic)
+   ========================================================================== */
+#toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 420px;
+    width: calc(100vw - 3rem);
+    pointer-events: none;
+}
+
+.toast-item {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 16px 40px -10px rgba(12, 42, 74, 0.25), 0 0 0 1px rgba(12, 42, 74, 0.08);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    border-left: 5px solid var(--color-blue);
+}
+
+.toast-item.toast-error {
+    border-left-color: #EF4444;
+    background: rgba(255, 245, 245, 0.97);
+}
+
+.toast-item.toast-success {
+    border-left-color: #10B981;
+    background: rgba(240, 253, 244, 0.97);
+}
+
+.toast-item.toast-warning {
+    border-left-color: #F59E0B;
+    background: rgba(254, 252, 232, 0.97);
+}
+
+.toast-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-navy);
+    margin-bottom: 0.25rem;
+}
+
+.toast-msg {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--color-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem;
+    border-radius: 6px;
+    transition: var(--transition-smooth);
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    color: var(--color-navy);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

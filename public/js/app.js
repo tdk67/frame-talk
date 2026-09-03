@@ -6,6 +6,7 @@
 import { store } from './state.js';
 import { api } from './api.js';
 import { ChronosPlayer } from './chronosPlayer.js';
+import { toast } from './toast.js';
 
 let player = null;
 
@@ -28,18 +29,30 @@ async function checkBackendHealth() {
 
     if (health.clickhouse_connected) {
         if (chBadge) chBadge.style.borderColor = 'rgba(74, 222, 128, 0.4)';
-        if (chText) chText.textContent = 'ClickHouse Connected';
+        if (chText) chText.textContent = 'ClickHouse Active';
     } else {
-        if (chText) chText.textContent = 'ClickHouse Buffered (Demo)';
+        if (chBadge) chBadge.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+        if (chText) chText.textContent = 'ClickHouse Standby';
     }
 
-    const key = store.getState().apiKey;
+    // Check Gemini API key config state
     const keyBadge = document.getElementById('api-status-badge');
     const keyText = document.getElementById('api-status-text');
-    if (key && keyBadge && keyText) {
-        keyBadge.classList.remove('unconfigured');
-        keyBadge.style.borderColor = 'rgba(74, 222, 128, 0.4)';
-        keyText.textContent = 'API Key Configured';
+    const hasKey = !!store.getState().apiKey;
+
+    if (hasKey) {
+        if (keyBadge) {
+            keyBadge.classList.remove('unconfigured');
+            keyBadge.style.borderColor = 'rgba(74, 222, 128, 0.4)';
+            keyBadge.setAttribute('aria-label', 'API Key configured. Click to change.');
+        }
+        if (keyText) keyText.textContent = 'BYOK Configured';
+    } else {
+        if (keyBadge) {
+            keyBadge.classList.add('unconfigured');
+            keyBadge.setAttribute('aria-label', 'API Key not configured. Click to set key.');
+        }
+        if (keyText) keyText.textContent = 'Set API Key';
     }
 
     // Dynamically route Grafana dashboard link
@@ -76,28 +89,51 @@ function initNavigation() {
             chronosSchedule: null,
             compiledVideoUrl: null
         });
+        toast.info('Workflow restarted. Ready for a new screencast.', 'Reset Complete');
     };
+
+    // Keyboard Arrow Navigation across Steps Tablist
+    const stepsNav = document.querySelector('.steps-nav');
+    if (stepsNav) {
+        stepsNav.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                const tabs = Array.from(stepsNav.querySelectorAll('.step-tab:not([disabled])'));
+                const currentIndex = tabs.indexOf(document.activeElement);
+                if (currentIndex !== -1) {
+                    e.preventDefault();
+                    let nextIndex = e.key === 'ArrowRight' ? currentIndex + 1 : currentIndex - 1;
+                    if (nextIndex >= tabs.length) nextIndex = 0;
+                    if (nextIndex < 0) nextIndex = tabs.length - 1;
+                    tabs[nextIndex].focus();
+                    tabs[nextIndex].click();
+                }
+            }
+        });
+    }
 }
 
 function renderStateUpdates(state) {
-    // 1. Update wizard cards
+    // 1. Update wizard cards and tabs with accessibility attributes
     for (let i = 1; i <= 5; i++) {
         const card = document.getElementById(`step-card-${i}`);
         const tab = document.getElementById(`tab-step-${i}`);
         const pipeItem = document.getElementById(`pipe-step-${i}`);
+        const isActive = i === state.activeStep;
 
         if (card) {
-            card.classList.toggle('active', i === state.activeStep);
+            card.classList.toggle('active', isActive);
+            card.setAttribute('aria-hidden', isActive ? 'false' : 'true');
         }
         if (tab) {
-            tab.classList.toggle('active', i === state.activeStep);
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
             if (i === 2) tab.disabled = !state.videoFile || !state.readmeText;
             if (i === 3) tab.disabled = state.scenes.length === 0;
             if (i === 4) tab.disabled = state.dialogue.length === 0;
             if (i === 5) tab.disabled = !state.chronosSchedule || !state.audioUrl;
         }
         if (pipeItem) {
-            pipeItem.classList.toggle('active', i === state.activeStep);
+            pipeItem.classList.toggle('active', isActive);
             const check = pipeItem.querySelector('.pipe-check');
             if (check) {
                 check.textContent = (i < state.activeStep || (i === 5 && state.compiledVideoUrl)) ? '☑' : (i === state.activeStep ? '▶' : '☐');
@@ -332,10 +368,11 @@ function initControls() {
                 renderVideoEvalScorecard(analyzeRes.eval_scorecard);
             }
             markAgentStatus('agent-transcript-status', 'Ingestion Agent: Complete');
+            toast.success(`Video parsed into ${analyzeRes.scenes.length} visual scenes!`, 'Analysis Complete');
             setTimeout(() => setStepLoading(2, false), 400);
         } catch (e) {
             console.error("Video Analysis Pipeline Error:", e);
-            alert(`Analysis Error: ${e.message}\n\nPlease verify that your server is running and your video is in a supported format (.mp4, .webm).`);
+            toast.error(`${e.message} (Please verify your server and file format)`, 'Analysis Error');
             setStepLoading(2, false);
         }
     };
@@ -358,9 +395,10 @@ function initControls() {
             renderQaReport(qaRes);
             markAgentStatus('agent-script-status', 'Scriptwriter Agent: Complete');
             markAgentStatus('agent-qa-status', 'QA Pacing Audit: Passed');
+            toast.success(`Generated ${scriptRes.dialogue.length} dialogue turns aligned to scenes.`, 'Script Ready');
             setStepLoading(3, false);
         } catch (e) {
-            alert(`Script Generation Error: ${e.message}`);
+            toast.error(e.message, 'Script Generation Failed');
             setStepLoading(3, false);
         }
     };
@@ -376,9 +414,10 @@ function initControls() {
             store.setState({ dialogue: scriptRes.dialogue, qaAudit: qaRes });
             renderScriptLines(scriptRes.dialogue);
             renderQaReport(qaRes);
+            toast.success('Script refined with QA audit feedback.', 'Refinement Complete');
             setStepLoading(3, false);
         } catch (e) {
-            alert(`Refinement Error: ${e.message}`);
+            toast.error(e.message, 'Refinement Failed');
             setStepLoading(3, false);
         }
     };
@@ -415,9 +454,10 @@ function initControls() {
 
             markAgentStatus('agent-chronos-status', 'Chronos Sync: Aligned');
             updateStepProgress(4, 100);
+            toast.success('PCM audio synthesized & Chronos offsets calculated!', 'Audio Synced');
             setTimeout(() => setStepLoading(4, false), 400);
         } catch (e) {
-            alert(`Audio Synthesis Error: ${e.message}`);
+            toast.error(e.message, 'Audio Synthesis Failed');
             setStepLoading(4, false);
         }
     };
@@ -675,17 +715,61 @@ function updateStepProgress(stepNum, percent) {
 // ─── Modal Key Config ────────────────────────────────────────────────────────
 
 function initKeyModal() {
+    let lastActiveElement = null;
+
     window.openKeyModal = () => {
+        lastActiveElement = document.activeElement;
         const modal = document.getElementById('key-modal');
-        if (modal) modal.classList.add('active');
+        if (modal) {
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+        }
         const input = document.getElementById('api-key-input');
-        if (input) input.value = store.getState().apiKey;
+        if (input) {
+            input.value = store.getState().apiKey;
+            setTimeout(() => input.focus(), 120);
+        }
     };
 
     window.closeKeyModal = () => {
         const modal = document.getElementById('key-modal');
-        if (modal) modal.classList.remove('active');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+            lastActiveElement.focus();
+        }
     };
+
+    // Close modal on Escape key and trap Tab focus inside dialog
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('key-modal');
+        if (!modal || !modal.classList.contains('active')) return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            window.closeKeyModal();
+            return;
+        }
+
+        if (e.key === 'Tab') {
+            const focusableElements = modal.querySelectorAll(
+                'button:not([disabled]), input:not([disabled]), a[href], [tabindex="0"]'
+            );
+            if (focusableElements.length === 0) return;
+            const first = focusableElements[0];
+            const last = focusableElements[focusableElements.length - 1];
+
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
 
     window.toggleKeyVisibility = () => {
         const input = document.getElementById('api-key-input');
@@ -726,6 +810,7 @@ function initKeyModal() {
                 store.setState({ apiKey: val });
                 checkBackendHealth();
                 window.closeKeyModal();
+                toast.success('Google Gemini API Key validated and saved securely.', 'Credentials Configured');
             } else {
                 if (err) {
                     err.textContent = data.error || 'Invalid API key.';
@@ -766,10 +851,11 @@ window.testVoice = async (selectId) => {
         if (data && data.audio_url) {
             const audio = new Audio(data.audio_url);
             audio.play();
+            toast.info(`Playing audio preview for ${voiceName}...`, 'Voice Test');
         }
     } catch (err) {
         console.error("Test Voice Error:", err);
-        alert("Failed to test voice: " + err.message);
+        toast.error("Failed to test voice: " + err.message, 'Voice Test Error');
     } finally {
         if (btn) btn.disabled = false;
     }
