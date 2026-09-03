@@ -25,19 +25,9 @@ app = FastAPI(
     version=config.version
 )
 
-# Production Security Headers Middleware
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    return response
-
-# User Context Middleware (Anonymous client isolation & pseudonymization)
-from server.api.middleware.user_context import UserContextMiddleware
-app.add_middleware(UserContextMiddleware)
+# User Context & Production Security Headers ASGI Middleware (Zero-deadlock on large uploads)
+from server.api.middleware.user_context import PureASGIUserContextMiddleware
+app.add_middleware(PureASGIUserContextMiddleware)
 
 # Restricted Cross-Origin Resource Sharing (CORS)
 app.add_middleware(

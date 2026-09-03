@@ -1,20 +1,16 @@
 """
-User Context Middleware: Anonymous Multi-User Identity & Pseudonymization
-Extracts client identity from X-FrameTalk-User-Id, validates entropy,
-and computes a privacy-preserving one-way pseudonym (user_hash) for storage and analytics.
+User Context & Security Headers Pure ASGI Middleware
+High-performance, zero-deadlock ASGI middleware for streaming multipart uploads,
+anonymous client pseudonymization, and production security headers.
 """
 
 import re
 import hashlib
 import uuid
 import logging
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 
 logger = logging.getLogger("frametalk.security.user_context")
 
-# Server-side pepper for HMAC/hash one-way irreversibility
 _SERVER_PEPPER = "frametalk_entropy_salt_2026_cinema"
 _USER_ID_REGEX = re.compile(r"^[a-zA-Z0-9_\-]{8,64}$")
 
@@ -25,24 +21,46 @@ def compute_user_hash(raw_user_id: str) -> str:
     salted = f"{raw_user_id}:{_SERVER_PEPPER}".encode("utf-8")
     return hashlib.sha256(salted).hexdigest()[:16]
 
-class UserContextMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
-        raw_id = request.headers.get("X-FrameTalk-User-Id", "").strip()
+class PureASGIUserContextMiddleware:
+    """
+    Pure ASGI middleware that avoids BaseHTTPMiddleware stream deadlocks during large file uploads.
+    Extracts anonymous user id, injects security headers, and attaches user_hash to state.
+    """
+    def __init__(self, app):
+        self.app = app
 
-        # Validate format or fallback to ephemeral UUID
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # 1. Parse headers directly from scope
+        raw_headers = dict(scope.get("headers", []))
+        raw_id_bytes = raw_headers.get(b"x-frametalk-user-id", b"")
+        raw_id = raw_id_bytes.decode("utf-8", errors="ignore").strip()
+
         if raw_id and _USER_ID_REGEX.match(raw_id):
             clean_id = raw_id
         else:
             clean_id = f"anon_{uuid.uuid4().hex[:12]}"
 
-        # Compute deterministic one-way pseudonym
         user_hash = compute_user_hash(clean_id)
 
         # Inject into request state
-        request.state.user_id = clean_id
-        request.state.user_hash = user_hash
+        state = scope.setdefault("state", {})
+        state["user_id"] = clean_id
+        state["user_hash"] = user_hash
 
-        response = await call_next(request)
-        # Echo back sanitized user-id header so client is aware
-        response.headers["X-FrameTalk-User-Hash"] = user_hash
-        return response
+        # 2. Wrap send to inject security headers & user hash on response
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                resp_headers = list(message.get("headers", []))
+                resp_headers.append((b"x-frametalk-user-hash", user_hash.encode("utf-8")))
+                resp_headers.append((b"x-content-type-options", b"nosniff"))
+                resp_headers.append((b"x-frame-options", b"SAMEORIGIN"))
+                resp_headers.append((b"x-xss-protection", b"1; mode=block"))
+                resp_headers.append((b"referrer-policy", b"strict-origin-when-cross-origin"))
+                message["headers"] = resp_headers
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)

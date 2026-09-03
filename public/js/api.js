@@ -33,6 +33,18 @@ async function computeFastHash(file) {
 export const api = {
     computeFastHash,
 
+    async checkCache(videoHash) {
+        try {
+            const headers = await getHeaders();
+            const res = await fetch(`${API_BASE}/api/check-cache/${encodeURIComponent(videoHash)}`, { headers });
+            if (!res.ok) return { cached: false, result: null };
+            return await res.json();
+        } catch (e) {
+            console.warn('Cache check probe failed, treating as miss:', e);
+            return { cached: false, result: null };
+        }
+    },
+
     async getJob(jobId) {
         const headers = await getHeaders();
         const res = await fetch(`${API_BASE}/api/jobs/${jobId}`, { headers });
@@ -52,25 +64,65 @@ export const api = {
         }
     },
 
-    async uploadAssets(videoFile, readmeFile) {
-        const formData = new FormData();
-        if (videoFile) formData.append('video', videoFile);
-        if (readmeFile) formData.append('readme', readmeFile);
+    async uploadAssets(videoFile, readmeFile, onProgress) {
+        return new Promise(async (resolve, reject) => {
+            const formData = new FormData();
+            if (videoFile) formData.append('video', videoFile);
+            if (readmeFile) formData.append('readme', readmeFile);
 
-        const headers = {};
-        if (window.getUserId) {
-            try {
-                headers['X-FrameTalk-User-Id'] = await window.getUserId();
-            } catch (e) {}
-        }
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${API_BASE}/api/upload`, true);
 
-        const res = await fetch(`${API_BASE}/api/upload`, {
-            method: 'POST',
-            headers,
-            body: formData
+            if (window.getUserId) {
+                try {
+                    const uid = await window.getUserId();
+                    if (uid) xhr.setRequestHeader('X-FrameTalk-User-Id', uid);
+                } catch (e) {}
+            }
+
+            if (xhr.upload && onProgress) {
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        const loadedMb = (e.loaded / (1024 * 1024)).toFixed(1);
+                        const totalMb = (e.total / (1024 * 1024)).toFixed(1);
+                        onProgress({ percent, loadedMb, totalMb });
+                    }
+                };
+            }
+
+            xhr.timeout = 10 * 60 * 1000;
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const parsed = JSON.parse(xhr.responseText);
+                        resolve(parsed);
+                    } catch (err) {
+                        reject(new Error('Invalid response from server: ' + xhr.responseText.slice(0, 100)));
+                    }
+                } else {
+                    let errMsg = `Upload failed with status ${xhr.status}`;
+                    try {
+                        const errJson = JSON.parse(xhr.responseText);
+                        if (errJson.detail) errMsg = errJson.detail;
+                    } catch (e) {
+                        if (xhr.responseText) errMsg += `: ${xhr.responseText.slice(0, 100)}`;
+                    }
+                    reject(new Error(errMsg));
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error('Network connection failed during upload. Check server connection.'));
+            };
+
+            xhr.ontimeout = () => {
+                reject(new Error('Upload timed out after 10 minutes. Video file may be too large.'));
+            };
+
+            xhr.send(formData);
         });
-        if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
-        return await res.json();
     },
 
     async analyzeVideo(videoFilename, readmeText, videoDurationSeconds, apiKey, videoHash, onProgress) {

@@ -88,3 +88,15 @@ async def get_job_status(job_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
+@router.get("/check-cache/{video_hash}")
+async def check_cache(video_hash: str, request: Request):
+    """
+    Non-blocking cache probe. Returns HTTP 200 with {cached: true/false}
+    instead of emitting red 404 errors in browser developer tools.
+    """
+    user_hash = getattr(request.state, "user_hash", None)
+    job = job_repository.get_job(video_hash, user_hash=user_hash)
+    if job and job.get("status") == "COMPLETED":
+        return {"cached": True, "status": "COMPLETED", "result": job.get("result")}
+    return {"cached": False, "status": job.get("status") if job else "NOT_FOUND", "result": None}
+

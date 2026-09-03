@@ -255,7 +255,7 @@ function initControls() {
         const { videoFile, readmeFile, readmeText, videoDurationSec, apiKey } = store.getState();
         if (!videoFile || !readmeText) return;
 
-        setStepLoading(2, true, 'Computing fast hash...');
+        setStepLoading(2, true, 'Computing video fingerprint...');
         window.navigateToStep(2);
         updateStepProgress(2, 5);
 
@@ -263,32 +263,38 @@ function initControls() {
             const fastHash = await api.computeFastHash(videoFile);
             updateStepProgress(2, 10);
             
-            const cachedJob = await api.getJob(fastHash);
+            // Clean probe check (returns 200 {cached: false} on cache miss)
+            const cacheStatus = await api.checkCache(fastHash);
             
             let analyzeRes;
             let finalVideoFilename;
 
-            if (cachedJob && cachedJob.status === 'COMPLETED') {
+            if (cacheStatus && cacheStatus.cached && cacheStatus.result) {
                 // CACHE HIT
-                setStepLoading(2, true, 'Cache hit! Loading scenes and syncing video silently...');
+                setStepLoading(2, true, 'Cache hit! Instant replay of visual scenes...');
                 updateStepProgress(2, 80);
                 
-                analyzeRes = cachedJob.result;
+                analyzeRes = cacheStatus.result;
                 
-                // Silently upload video in the background for compiler stage later
+                // Silently upload video in background for FFmpeg compiler stage later
                 api.uploadAssets(videoFile, readmeFile).then(uploadRes => {
                     store.setState({ uploadedVideoFilename: uploadRes.video_filename });
-                }).catch(e => console.error("Silent upload failed", e));
+                }).catch(e => console.warn("Background upload synchronization note:", e.message));
                 
-                // Keep the state mostly empty for now since uploadedVideoFilename will populate asynchronously
                 finalVideoFilename = null;
                 updateStepProgress(2, 100);
             } else {
-                // CACHE MISS
-                setStepLoading(2, true, 'Uploading video for analysis...');
-                const uploadRes = await api.uploadAssets(videoFile, readmeFile);
+                // CACHE MISS: Track real-time upload bytes & progress
+                setStepLoading(2, true, 'Uploading screencast (0%)...');
+                
+                const uploadRes = await api.uploadAssets(videoFile, readmeFile, (p) => {
+                    setStepLoading(2, true, `Uploading screencast: ${p.percent}% (${p.loadedMb}MB / ${p.totalMb}MB)...`);
+                    updateStepProgress(2, 10 + Math.round(p.percent * 0.45)); // Scale 10% -> 55%
+                });
+                
                 finalVideoFilename = uploadRes.video_filename;
-                updateStepProgress(2, 60);
+                updateStepProgress(2, 58);
+                setStepLoading(2, true, 'Upload verified! Starting Gemini 3.7 Flash analysis...');
 
                 let timerInterval;
                 let secondsElapsed = 0;
@@ -298,14 +304,14 @@ function initControls() {
                     readmeText, 
                     videoDurationSec, 
                     apiKey,
-                    fastHash, // Use fast hash as the ID!
+                    fastHash,
                     (jobId) => {
                         timerInterval = setInterval(() => {
                             secondsElapsed++;
-                            setStepLoading(2, true, `Running background video analysis... (${secondsElapsed}s)`);
+                            setStepLoading(2, true, `Gemini 3.7 Flash analyzing video frames... (${secondsElapsed}s)`);
                         }, 1000);
-                        setStepLoading(2, true, `Running background video analysis... (0s)`);
-                        updateStepProgress(2, 75);
+                        setStepLoading(2, true, `Gemini 3.7 Flash analyzing video frames... (0s)`);
+                        updateStepProgress(2, 70);
                     }
                 );
                 
@@ -328,7 +334,8 @@ function initControls() {
             markAgentStatus('agent-transcript-status', 'Ingestion Agent: Complete');
             setTimeout(() => setStepLoading(2, false), 400);
         } catch (e) {
-            alert(`Analysis Error: ${e.message}`);
+            console.error("Video Analysis Pipeline Error:", e);
+            alert(`Analysis Error: ${e.message}\n\nPlease verify that your server is running and your video is in a supported format (.mp4, .webm).`);
             setStepLoading(2, false);
         }
     };
