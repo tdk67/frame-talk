@@ -192,6 +192,7 @@
       "type": "table",
       "targets": [
         {
+          "format": 1,
           "rawSql": "SELECT event_time, speaker, dialogue_text, audio_duration_ms, required_freeze_ms, pacing_status FROM castops.sync_events ORDER BY event_time DESC LIMIT 50",
           "refId": "A"
         }
@@ -343,6 +344,7 @@
       "type": "table",
       "targets": [
         {
+          "format": 1,
           "rawSql": "SELECT agent_name, count(*) as calls, sum(prompt_tokens) as prompt_tokens, sum(completion_tokens) as completion_tokens, sum(total_tokens) as total_tokens, round(sum(cost_usd), 4) as cost_usd FROM castops.llm_calls GROUP BY agent_name ORDER BY cost_usd DESC",
           "refId": "A"
         }
@@ -364,7 +366,8 @@
       "type": "table",
       "targets": [
         {
-          "rawSql": "SELECT call_time, agent_name, model_name, prompt_tokens, completion_tokens, total_tokens, round(cost_usd, 5) as cost_usd, latency_ms, status FROM castops.llm_calls ORDER BY call_time DESC LIMIT 50",
+          "format": 1,
+          "rawSql": "SELECT call_time as event_time, agent_name, model_name, prompt_tokens, completion_tokens, total_tokens, round(cost_usd, 5) as cost_usd, latency_ms, status FROM castops.llm_calls ORDER BY call_time DESC LIMIT 50",
           "refId": "A"
         }
       ]
@@ -463,6 +466,7 @@
       "type": "table",
       "targets": [
         {
+          "format": 1,
           "rawSql": "SELECT action_type, round(avg(cnt), 2) as avg_per_user, min(cnt) as min_per_user, max(cnt) as max_per_user, count(user_hash) as active_users FROM (SELECT user_hash, action_type, count(*) as cnt FROM castops.user_activity GROUP BY user_hash, action_type) GROUP BY action_type ORDER BY active_users DESC",
           "refId": "A"
         }
@@ -484,6 +488,7 @@
       "type": "table",
       "targets": [
         {
+          "format": 1,
           "rawSql": "SELECT event_time, user_hash, action_type, session_id FROM castops.user_activity ORDER BY event_time DESC LIMIT 50",
           "refId": "A"
         }

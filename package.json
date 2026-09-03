@@ -5,7 +5,10 @@
   "scripts": {
     "start": "node server.js",
     "serve": "npx serve public -l 8000",
-    "lint:html": "npx -y htmlhint public/*.html"
+    "lint:html": "npx -y htmlhint public/*.html",
+    "lint": "npm run lint:html",
+    "build": "npm run lint:html",
+    "test": "npm run lint:html && python -m unittest discover tests -v"
   },
   "keywords": [
     "multimodal",
