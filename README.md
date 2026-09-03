@@ -97,7 +97,7 @@ flowchart TD
 ## 🛠️ Mandatory Technical Stack Integration
 
 ### 1. Google Cloud Layer (The Core Brain)
-- **Google Cloud Agent Platform & ADK (`agent.py`):** Enterprise Director agent (`FrameTalk_Director`, Project: `agentic-cinema-frametalk`, Location: `us-west1`) orchestrated via Google Agent Development Kit (v2.7.1) with Model Context Protocol (`/mcp`) integration.
+- **Google Cloud Agent Platform & ADK (`agent.py`):** Director agent (`FrameTalk_Director`, Project: `agentic-cinema-frametalk`, Location: `us-west1`) specified via Google Agent Development Kit (v2.8.0) with Model Context Protocol (`/mcp`) integration.
 - **`gemini-3.7-flash` (Vertex AI & Gemini Vision):** Native video token execution analyzing temporal UI actions, clicks, and terminal logs directly from raw video pixels without transcripts. Supports both Vertex AI Enterprise and Gemini Developer API runtimes.
 - **`gemini-3.1-flash-tts-preview` (Speech & Audio):** Multi-speaker raw PCM synthesis (`Puck` for Mark, `Kore` for Sarah) enabling millisecond-precision duration metering and dynamic timeline expansion.
 - **Prompt Caching Cost Reduction:** Automatic extraction of `cached_content_token_count` applying Google Cloud's 75% discount ($0.0375 / 1M cached tokens) with transparent pre-flight cost calculation.
@@ -160,14 +160,14 @@ npm test
 
 | Test Module | Coverage | Status |
 | :--- | :--- | :---: |
-| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK, security headers (HSTS, CSP), MCP auth & telemetry, non-existent file quota preservation | **18/18 PASS** |
+| [`tests/test_api_routes.py`](tests/test_api_routes.py) | Health, BYOK, security headers (HSTS, CSP), MCP auth (live key validation, anti-backdoor), non-existent file quota preservation | **21/21 PASS** |
 | [`tests/test_chronos_engine.py`](tests/test_chronos_engine.py) | 24 kHz PCM duration math ($48\text{ bytes/ms}$), dynamic freeze calculation, $+300\text{ms}$ buffer | **4/4 PASS** |
 | [`tests/test_frontend_html_integrity.py`](tests/test_frontend_html_integrity.py) | LIFO tag stack balancing, illegal nesting blocking, wizard card hierarchy anti-bleed | **2/2 PASS** |
 | [`tests/test_quota_service.py`](tests/test_quota_service.py) | Hosted demo key limits (3 videos, $1.00 USD cost cap), IP-bound quota, Global circuit breaker | **8/8 PASS** |
 | [`tests/test_repositories.py`](tests/test_repositories.py) | `JobRepository` lifecycle, path traversal blocking, `FileRepository` validation | **5/5 PASS** |
 | [`tests/test_security_guardrails.py`](tests/test_security_guardrails.py) | Prompt injection detection, XML isolation wrapping, video magic byte validation | **5/5 PASS** |
 | [`tests/test_user_isolation.py`](tests/test_user_isolation.py) | Anonymous client pseudonymization, job ownership isolation, ClickHouse user aggregations | **8/8 PASS** |
-| **TOTAL** | **Comprehensive Build Integrity** | **50/50 PASS** |
+| **TOTAL** | **Comprehensive Build Integrity** | **53/53 PASS** |
 
 ### 2. Multi-Stage AI Evaluation Suite (`server/evals/`)
 Evaluates Gemini models and the Google Cloud Agent Platform Director against the reference dataset ([`server/evals/dataset/`](server/evals/dataset/)):
@@ -198,9 +198,10 @@ Full methodology, metrics, and ground-truth schemas are documented in [**`TEST_P
 
 * **Indirect Prompt Injection Defense:** Regex filters block jailbreak phrases, instructions override directives, and DAN modes. User documentation is wrapped in `<untrusted_documentation>` with instruction-neutralizing directives.
 * **SQL Injection Immunity:** Parameterized ClickHouse queries (`%(session_id)s`) with integer bounds checking.
+* **Authenticated MCP Telemetry Writes:** `log_clickhouse_telemetry` requires a cryptographically signed session token, a timing-safe server-secret Bearer match, or a Google API key live-validated against the Gemini API (bounded TTL cache, fail-closed). No format-trust or test backdoors.
 * **Path Traversal Protection:** `_safe_resolve()` validates path roots and strictly rejects filenames with `..`, `/`, or `\`.
 * **Upload Hardening:** 500 MB streaming upload ceiling; file extension and magic byte verification.
-* **Production Security Headers:** Injected on all outgoing responses (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection: 1; mode=block`).
+* **Production Security Headers:** Injected on all outgoing responses (`Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection`, `Referrer-Policy`).
 * **Subprocess Deadlock Protection:** Enforced 180s/300s timeouts on all FFmpeg rendering subprocesses.
 * **GDPR Compliance:** Full Impressum (`/impressum.html`) and Privacy Policy (`/datenschutz.html`) with private operator disclaimers and Bring-Your-Own-Key (BYOK) privacy assurances.
 

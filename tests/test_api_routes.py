@@ -352,5 +352,76 @@ class TestApiRoutes(unittest.TestCase):
         self.assertFalse(data["result"]["isError"])
         self.assertIn("Successfully streamed", data["result"]["content"][0]["text"])
 
+    def test_mcp_telemetry_test_prefix_backdoor_rejected(self):
+        """Verify the removed test_/usr_test_ bypass stays closed: junk prefixes are rejected with no network call."""
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 102,
+            "method": "tools/call",
+            "params": {
+                "name": "log_clickhouse_telemetry",
+                "arguments": {
+                    "session_id": "mcp_probe_test",
+                    "event_type": "PROBE_EVENT"
+                }
+            }
+        }
+        res = self.client.post("/mcp", json=payload, headers={"X-API-Key": "test_123"})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"]["code"], -32001)
+
+    def test_mcp_telemetry_fake_aizasy_key_rejected_via_live_validation(self):
+        """Verify AIza-format keys are live-validated against Google (fail-closed on 403), not format-trusted."""
+        from unittest.mock import patch, MagicMock
+        fake_resp = MagicMock()
+        fake_resp.status_code = 403
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 103,
+            "method": "tools/call",
+            "params": {
+                "name": "log_clickhouse_telemetry",
+                "arguments": {
+                    "session_id": "mcp_probe_test",
+                    "event_type": "PROBE_EVENT"
+                }
+            }
+        }
+        fake_key = "AIzaSy" + "A" * 33  # 39 chars, matches Google key format
+        with patch("server.api.routers.mcp_router.requests.get", return_value=fake_resp) as mock_get:
+            res = self.client.post("/mcp", json=payload, headers={"X-API-Key": fake_key})
+            mock_get.assert_called_once()  # proves a live validation attempt happened
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("error", data)
+        self.assertEqual(data["error"]["code"], -32001)
+
+    def test_mcp_telemetry_valid_google_key_accepted_via_live_validation(self):
+        """Verify a Google-validated API key (mocked 200) is accepted and the telemetry write succeeds."""
+        from unittest.mock import patch, MagicMock
+        ok_resp = MagicMock()
+        ok_resp.status_code = 200
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 104,
+            "method": "tools/call",
+            "params": {
+                "name": "log_clickhouse_telemetry",
+                "arguments": {
+                    "session_id": "mcp_byok_valid",
+                    "event_type": "PROBE_EVENT"
+                }
+            }
+        }
+        fake_key = "AIzaSy" + "B" * 33
+        with patch("server.api.routers.mcp_router.requests.get", return_value=ok_resp):
+            res = self.client.post("/mcp", json=payload, headers={"X-API-Key": fake_key})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertNotIn("error", data)
+        self.assertFalse(data["result"]["isError"])
+
 if __name__ == "__main__":
     unittest.main()
