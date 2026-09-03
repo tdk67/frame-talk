@@ -180,6 +180,16 @@ flowchart TD
 
 ## 4. Detailed Component Architecture
 
+### Component 0: Google Cloud Agent Platform (`agent.py`)
+* **Framework:** Google Agent Development Kit (ADK v2.7.1)
+* **Agent Identity:** `FrameTalk_Director` (Deployed ID: `agent_1788438917580`, Project: `agentic-cinema-frametalk`, Region: `us-west1`).
+* **Enterprise Anti-Prompt Injection Scope Lock:** Hardened system instructions enforce strict refusal boundaries (`ACCESS DENIED: Frame Talk Director operates strictly within the screencast-to-podcast media production pipeline`) against jailbreaks, system prompt exfiltration, and out-of-scope tasks.
+* **Model Context Protocol (MCP) Server (`server/api/routers/mcp_router.py`):**
+  - Implements Model Context Protocol specification over SSE (`/mcp`) and JSON-RPC (`POST /mcp`).
+  - Exposes production tools: `stream_sync_events`, `get_pipeline_metrics`, and `inspect_scene_drift`.
+
+---
+
 ### Component 1: Security & Guardrails Engine (`server/core/guardrails.py`)
 * **Prompt Injection Scanner:** Scans incoming `README.md` and user text against a strict regex blacklist of adversarial injection vectors (e.g. *"ignore previous instructions"*, *"system prompt override/leak"*, *"developer mode / DAN"*, delimiter breakouts).
 * **Isolation Boundary Wrapping:** Wraps all external context inside explicit XML boundary tags (`<untrusted_documentation>`) with instruction-neutralizing directives:
@@ -236,9 +246,10 @@ flowchart TD
 ---
 
 ### Component 5: Observability & Telemetry (`server/sync/clickhouse_logger.py`)
-* **Database:** ClickHouse Columnar Storage (`castops.sync_events`)
-* **Table Schema:**
+* **Database:** ClickHouse Columnar High-Throughput Storage (`database: castops`)
+* **ClickHouse Columnar Table Schemas:**
   ```sql
+  -- 1. Real-time time-series synchronization events
   CREATE TABLE IF NOT EXISTS castops.sync_events (
       event_time DateTime64(3),
       session_id String,
@@ -253,15 +264,43 @@ flowchart TD
       required_freeze_ms UInt32,
       accumulated_drift_ms Int32,
       pacing_status LowCardinality(String),
-      token_cost Float32
+      token_cost Float32,
+      user_hash LowCardinality(String) DEFAULT ''
   ) ENGINE = MergeTree()
   ORDER BY (session_id, turn_index);
+
+  -- 2. Granular LLM & TTS model invocations with prompt caching discounts
+  CREATE TABLE IF NOT EXISTS castops.llm_calls (
+      call_time DateTime64(3),
+      session_id String,
+      agent_name LowCardinality(String),
+      model_name LowCardinality(String),
+      prompt_tokens UInt32,
+      completion_tokens UInt32,
+      total_tokens UInt32,
+      cost_usd Float64,
+      latency_ms UInt32,
+      status LowCardinality(String),
+      user_hash LowCardinality(String) DEFAULT '',
+      cached_tokens UInt32 DEFAULT 0
+  ) ENGINE = MergeTree()
+  ORDER BY (session_id, call_time);
+
+  -- 3. GDPR-compliant anonymous user journey funnels (Zero PII)
+  CREATE TABLE IF NOT EXISTS castops.user_activity (
+      event_time DateTime64(3),
+      user_hash LowCardinality(String),
+      action_type LowCardinality(String),
+      session_id String,
+      metadata String
+  ) ENGINE = MergeTree()
+  ORDER BY (user_hash, event_time);
   ```
-* **Grafana Dashboard:** Pre-provisioned dashboards track:
-  * Running Timeline Drift Delta (ms)
-  * Cumulative Frame Freezes Injected (s)
-  * Speaker Turn Balance (Alex vs. Sam)
-  * Gemini API Latency & Token Expenditure
+* **Grafana Labs Dashboard (`https://grafana.taskmind-ai.com`):**
+  * **Real-Time Time-Series Sync Metrics:** Max Timing Drift (ms), Total Frame Freeze Injected (s), Alignment Drift Delta Over Video Timeline, and Audio Duration vs Required Freeze per Turn.
+  * **Agent & Model Observability:** Total LLM Calls, Input Tokens, Output Tokens, Total Cost, multi-model bar gauges (`gemini-3.7-flash` vs. `gemini-3.1-flash-tts-preview`), and Prompt Caching savings.
+  * **Real-Time Trace Logs:** Formatted tabular traces of individual Gemini API calls with latency and token breakdowns.
+  * **Zero-PII User Funnel:** Conversion metrics tracking unique users across `VIDEO_ANALYZED` &rarr; `SCRIPT_GENERATED` &rarr; `AUDIO_SYNTHESIZED`.
 
 ---
 
@@ -312,9 +351,17 @@ flowchart TD
 
 ## 5. Verification & Testing Protocol
 
-The engine is backed by a dual verification architecture:
-1. **Model Evaluation Framework (`server/evals/`):** 3-stage decoupled ground-truth benchmarks evaluating visual entity recall ($\ge 70\%$), causality ($\ge 85\%$), zero boilerplate, and QA discrimination.
-2. **Automated Unit Test Suite (`tests/`):** 21 deterministic tests verifying API contracts, Chronos math, repository persistence, path traversal blocking, and prompt injection filters in $< 0.6$ seconds.
+The engine is backed by a dual verification architecture and continuous quality gate:
+1. **Model Evaluation Framework (`server/evals/`):** 4-stage decoupled ground-truth benchmark:
+   - **Stage 1 (Video Grounding):** Visual entity recall ($\ge 70\%$), causality ($\ge 85\%$), zero boilerplate.
+   - **Stage 2 (Scriptwriting):** Anchor accuracy, README grounding, 100% anti-timestamp pass rate.
+   - **Stage 3 (QA Audit):** Dual-battery discrimination (positive benchmark pass + 100% defect catch).
+   - **Stage 4 (GCP Director Agent):** ADK v2.7.1 Director execution, anti-prompt injection scope lock, and Chronos hold validation (**Score: 94/100**).
+2. **Automated Unit Test Suite (`tests/`):** 37 deterministic unit tests verifying API contracts, Chronos math, HTML DOM stack balancing, repository persistence, path traversal blocking, and prompt injection filters in $< 0.7$ seconds.
    ```bash
+   # Run full test suite:
    python -m unittest discover tests -v
+
+   # Run complete build gate (HTML lint + unit tests):
+   npm test
    ```
