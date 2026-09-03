@@ -481,9 +481,11 @@ class TestApiRoutes(unittest.TestCase):
         self.assertIn("agent_engine", latest.get("metadata", ""))
 
     def test_studio_service_adk_director_dispatch_and_fallback(self):
-        """Verify studio_service._orchestrate_with_adk_director executes without crashing and logs dispatch."""
+        """Verify studio_service._orchestrate_with_adk_director executes ADK Director, returns dialogue, and falls back resiliently."""
+        from unittest.mock import patch, MagicMock
         from server.services.studio_service import studio_service
         from server.repositories.telemetry_repository import telemetry_repository
+
         test_scenes = [{
             "scene_id": "test_scene_adk_1",
             "start_time_ms": 0,
@@ -495,15 +497,34 @@ class TestApiRoutes(unittest.TestCase):
         }]
         readme = "# Sample Documentation\nExplains the data flow."
 
-        # Should execute safely and return None or script without throwing
-        result = studio_service._orchestrate_with_adk_director(
-            scenes=test_scenes,
-            readme_text=readme
-        )
-        # Verify telemetry recorded the dispatch attempt
-        activities = telemetry_repository.get_user_activities(limit=10)
-        callback_events = [a for a in activities if a.get("action_type") == "AGENT_CALLBACK_RECEIVED"]
-        self.assertTrue(len(callback_events) > 0)
+        # 1. Test successful ADK Director execution returning real structured dialogue
+        mock_event = MagicMock()
+        mock_event.content.parts = [MagicMock(text='```json\n{"dialogue": [{"turn_index": 0, "scene_id": "test_scene_adk_1", "speaker": "Alex", "text": "Checking dashboard metrics live."}]}\n```')]
+        with patch("google.adk.runners.InMemoryRunner.run", return_value=[mock_event]):
+            result = studio_service._orchestrate_with_adk_director(
+                scenes=test_scenes,
+                readme_text=readme
+            )
+            self.assertIsNotNone(result)
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0]["speaker"], "Alex")
+            self.assertEqual(result[0]["scene_id"], "test_scene_adk_1")
+            self.assertIn("Checking dashboard metrics live.", result[0]["text"])
+
+            # Verify callback telemetry recorded real execution
+            activities = telemetry_repository.get_user_activities(limit=10)
+            callback_events = [a for a in activities if a.get("action_type") == "AGENT_CALLBACK_RECEIVED" and "adk_director_execution" in a.get("metadata", "")]
+            self.assertTrue(len(callback_events) > 0)
+
+        # 2. Test resilient fallback when ADK runner throws
+        with patch("google.adk.runners.InMemoryRunner.run", side_effect=RuntimeError("ADK Timeout")):
+            fallback_res = studio_service.generate_dialogue_script(
+                scenes=test_scenes,
+                readme_text=readme
+            )
+            self.assertIsNotNone(fallback_res)
+            self.assertTrue(len(fallback_res) > 0)
+            self.assertIn("speaker", fallback_res[0])
 
 if __name__ == "__main__":
     unittest.main()

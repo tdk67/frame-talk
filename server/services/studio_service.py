@@ -106,14 +106,23 @@ class StudioService:
         api_key: Optional[str] = None
     ) -> Optional[List[Dict[str, Any]]]:
         """
-        Attempts to dispatch dialogue generation through the Google Cloud Agent Platform
-        ADK Director / ReasoningEngine. Returns None if remote agent is unavailable or
-        falls back cleanly to native agents.
+        Executes dialogue generation through the Google Cloud Agent Platform
+        ADK Director (agent.py:root_agent) or Vertex AI ReasoningEngine.
+        Returns parsed and validated dialogue turns, or None if unavailable.
         """
+        import os
+        import json
+        import re
         from server.core.config import config
         from server.repositories.telemetry_repository import telemetry_repository
 
-        # 1. Attempt Google Cloud Vertex AI ReasoningEngine if enabled
+        active_key = api_key or config.get_server_api_key()
+        if active_key and not os.environ.get("GOOGLE_API_KEY"):
+            os.environ["GOOGLE_API_KEY"] = active_key
+
+        session_id = scenes[0].get("scene_id", "adk_session") if scenes else "adk_session"
+
+        # 1. Attempt Google Cloud Vertex AI ReasoningEngine if explicitly enabled
         if config.vertex_ai_enabled:
             try:
                 from vertexai.preview import reasoning_engines
@@ -125,10 +134,9 @@ class StudioService:
                     "readme_text": readme_text[:2000],
                     "session_source": "agent_engine"
                 }
-                import json
                 res = y_app.query(input=json.dumps(payload))
                 telemetry_repository.log_agent_callback(
-                    session_id=scenes[0].get("scene_id", "adk_session"),
+                    session_id=session_id,
                     tool_name="reasoning_engine_query",
                     session_source="agent_engine",
                     metadata=f"scenes:{len(scenes)}"
@@ -136,21 +144,76 @@ class StudioService:
                 if isinstance(res, list) and len(res) > 0 and isinstance(res[0], dict):
                     return res
             except Exception as e:
-                logger.warning(f"Google Cloud Agent Engine unreachable ({e}). Falling back to ADK Director / local orchestrator.")
+                logger.warning(f"Google Cloud Agent Engine remote query bypassed ({e}). Falling back to ADK Director.")
 
-        # 2. Attempt Local Google ADK Director if installed
+        # 2. Execute Local Google Cloud ADK Director (agent.py:root_agent)
         try:
+            from google.adk.runners import InMemoryRunner
+            from google.genai import types
             import agent
+
             if hasattr(agent, "root_agent"):
-                logger.info("ADK Director agent definition (agent.py:root_agent) loaded. Coordinating with ScriptwriterPersonaAgent.")
-                telemetry_repository.log_agent_callback(
-                    session_id=scenes[0].get("scene_id", "adk_session"),
-                    tool_name="adk_director_dispatch",
-                    session_source="adk_director",
-                    metadata=f"scenes:{len(scenes)};agent:{agent.root_agent.name}"
+                logger.info(f"Executing ADK Director agent '{agent.root_agent.name}' (InMemoryRunner)...")
+                runner = InMemoryRunner(agent=agent.root_agent)
+                runner.session_service.create_session_sync(
+                    app_name=runner.app_name,
+                    user_id="adk_director_user",
+                    session_id=session_id
                 )
+
+                prompt = (
+                    "You are FrameTalk_Director. Generate an engaging two-host technical podcast dialogue between Alex and Sarah for these visual scenes:\n"
+                    f"{json.dumps(scenes, indent=2)}\n\n"
+                    "README CONTEXT:\n"
+                    f"{readme_text[:2000]}\n\n"
+                    "Return ONLY valid JSON matching this schema:\n"
+                    "```json\n"
+                    '{"dialogue": [\n'
+                    '  {"turn_index": 0, "scene_id": "scene_1", "speaker": "Alex", "text": "..."},\n'
+                    '  {"turn_index": 1, "scene_id": "scene_1", "speaker": "Sarah", "text": "..."}\n'
+                    ']}\n'
+                    "```"
+                )
+                msg = types.Content(parts=[types.Part(text=prompt)])
+                events = list(runner.run(user_id="adk_director_user", session_id=session_id, new_message=msg))
+
+                combined_text = ""
+                for ev in events:
+                    if getattr(ev, "content", None) and ev.content.parts:
+                        for p in ev.content.parts:
+                            if getattr(p, "text", None):
+                                combined_text += p.text
+
+                turns = []
+                match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", combined_text, re.DOTALL)
+                if match:
+                    try:
+                        data = json.loads(match.group(1))
+                        turns = data.get("dialogue", [])
+                    except Exception:
+                        pass
+                if not turns:
+                    first_brace = combined_text.find("{")
+                    last_brace = combined_text.rfind("}")
+                    if first_brace != -1 and last_brace > first_brace:
+                        try:
+                            data = json.loads(combined_text[first_brace:last_brace + 1])
+                            turns = data.get("dialogue", [])
+                        except Exception:
+                            pass
+
+                if turns and isinstance(turns, list) and isinstance(turns[0], dict):
+                    telemetry_repository.log_agent_callback(
+                        session_id=session_id,
+                        tool_name="adk_director_execution",
+                        session_source="adk_director",
+                        metadata=f"scenes:{len(scenes)};turns:{len(turns)};agent:{agent.root_agent.name}"
+                    )
+                    cleaned = scriptwriter_agent._clean_and_index_turns(turns, scenes)
+                    logger.info(f"ADK Director successfully produced {len(cleaned)} dialogue turns.")
+                    return cleaned
         except Exception as e:
-            logger.debug(f"ADK Director local dispatch bypassed: {e}")
+            logger.warning(f"ADK Director execution failed ({e}). Falling back to native in-process scriptwriter.")
 
         return None
 

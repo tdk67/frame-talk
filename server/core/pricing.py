@@ -21,6 +21,10 @@ def calculate_llm_cost(model_name: str, prompt_tokens: int, completion_tokens: i
     Calculates dollar cost for a given LLM model invocation.
     Applies official Google Cloud 75% discount on cached input tokens.
     """
+    prompt_tokens = int(prompt_tokens or 0)
+    completion_tokens = int(completion_tokens or 0)
+    cached_tokens = int(cached_tokens or 0)
+
     m = model_name.lower()
     if "tts" in m:
         # For TTS, completion_tokens represents synthesized characters

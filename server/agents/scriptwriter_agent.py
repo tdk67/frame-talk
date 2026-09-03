@@ -104,9 +104,9 @@ Output ONLY a raw JSON object with a "dialogue" array:
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
         try:
-            p_tok = getattr(resp.usage_metadata, "prompt_token_count", 0) if hasattr(resp, "usage_metadata") else 0
-            c_tok = getattr(resp.usage_metadata, "candidates_token_count", 0) if hasattr(resp, "usage_metadata") else 0
-            cached_tok = getattr(resp.usage_metadata, "cached_content_token_count", 0) if hasattr(resp, "usage_metadata") else 0
+            p_tok = int(getattr(resp.usage_metadata, "prompt_token_count", 0) or 0) if hasattr(resp, "usage_metadata") else 0
+            c_tok = int(getattr(resp.usage_metadata, "candidates_token_count", 0) or 0) if hasattr(resp, "usage_metadata") else 0
+            cached_tok = int(getattr(resp.usage_metadata, "cached_content_token_count", 0) or 0) if hasattr(resp, "usage_metadata") else 0
             from server.core.pricing import calculate_llm_cost
             cost = calculate_llm_cost(config.script_model, p_tok, c_tok, cached_tokens=cached_tok)
             from server.repositories.telemetry_repository import telemetry_repository

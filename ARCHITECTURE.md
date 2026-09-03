@@ -225,6 +225,16 @@ flowchart TD
 
 ---
 
+### Component 2b: Google Cloud Agent Platform (ADK Director & MCP Protocol)
+* **Agent Definition (`agent.py`):** Exported as `FrameTalk_Director` using Google Agent Development Kit (ADK v2.8.0), orchestrating `Scriptwriter_Persona_Agent` and `QA_Pacing_Auditor_Agent` sub-agents.
+* **Dual Forward/Fallback Execution (`server/services/studio_service.py`):**
+  1. **ADK Director (`InMemoryRunner`):** `studio_service.generate_dialogue_script()` executes `InMemoryRunner(agent=agent.root_agent)` to direct multi-scene dialogue synthesis and conversational dynamics.
+  2. **Model Context Protocol (MCP `/mcp`):** The Director tools (`calculate_chronos_hold`, `log_clickhouse_telemetry`, `audit_script_pacing`) execute JSON-RPC 2.0 calls against the Chronos MCP endpoint. Every callback writes an authenticated `AGENT_CALLBACK_RECEIVED` event to ClickHouse tagged with `session_source="adk_director"`.
+  3. **High-Concurrency In-Process Fallback:** In the event of engine timeouts or local execution limits, the runtime fails over smoothly to native in-process agent execution (`server/agents/scriptwriter_agent.py`), preventing production pipeline interruption.
+  4. **Standalone Verification Runner:** Run `python scripts/demo_adk_director.py` for reproducible live evidence of ADK Director invocation, model generation, and MCP telemetry round-trips in ClickHouse.
+
+---
+
 ### Component 3: Scriptwriter Persona Agent (`server/agents/scriptwriter_agent.py`)
 * **Model:** `gemini-3.7-flash`
 * **Hosts:**

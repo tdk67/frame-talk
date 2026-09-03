@@ -166,18 +166,143 @@ frame_talk_director_url_context_agent = LlmAgent(
   ],
 )
 
+def calculate_chronos_hold(
+    speech_text: str,
+    video_duration_ms: int,
+    words_per_second: float = 2.5
+) -> dict:
+    """Calculates millisecond PCM duration and required dynamic video hold (freeze duration)
+    using the Chronos synchronization engine math over MCP."""
+    import os
+    import json
+    import urllib.request
+    mcp_url = os.getenv("MCP_SERVER_URL", "https://frame-talk.taskmind-ai.com/mcp")
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "adk-hold",
+        "method": "tools/call",
+        "params": {
+            "name": "calculate_chronos_hold",
+            "arguments": {
+                "speech_text": speech_text,
+                "video_duration_ms": int(video_duration_ms),
+                "words_per_second": float(words_per_second),
+                "session_source": "adk_director"
+            }
+        }
+    }
+    try:
+        req = urllib.request.Request(
+            mcp_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        words = len(speech_text.split())
+        est_dur = int((words / max(0.1, words_per_second)) * 1000)
+        freeze = max(0, est_dur - video_duration_ms + 300) if est_dur > video_duration_ms else 0
+        return {
+            "speech_duration_ms": est_dur,
+            "video_duration_ms": video_duration_ms,
+            "required_freeze_ms": freeze,
+            "status": "SYNCHRONIZED" if freeze == 0 else "FREEZE_REQUIRED",
+            "fallback": True
+        }
+
+
+def log_clickhouse_telemetry(
+    session_id: str,
+    scene_id: str,
+    audio_duration_ms: int,
+    freeze_injected_ms: int = 0,
+    event_type: str = "DIRECTOR_SYNC",
+    speaker: str = "Alex",
+    dialogue_text: str = ""
+) -> dict:
+    """Streams dialogue synchronization and hold events to ClickHouse via the Frame Talk Chronos MCP server."""
+    import os
+    import json
+    import urllib.request
+    mcp_url = os.getenv("MCP_SERVER_URL", "https://frame-talk.taskmind-ai.com/mcp")
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GCP_FLOW_KEY") or ""
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["X-API-Key"] = api_key
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "adk-telemetry",
+        "method": "tools/call",
+        "params": {
+            "name": "log_clickhouse_telemetry",
+            "arguments": {
+                "session_id": session_id,
+                "scene_id": scene_id,
+                "audio_duration_ms": int(audio_duration_ms),
+                "freeze_injected_ms": int(freeze_injected_ms),
+                "event_type": event_type,
+                "speaker": speaker,
+                "dialogue_text": dialogue_text,
+                "session_source": "adk_director"
+            }
+        }
+    }
+    try:
+        req = urllib.request.Request(
+            mcp_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        return {"status": "offline", "error": str(e)}
+
+
+def audit_script_pacing(
+    dialogue_text: str,
+    target_duration_sec: float
+) -> dict:
+    """Audits candidate dialogue pacing against scene duration budget over MCP."""
+    import os
+    import json
+    import urllib.request
+    mcp_url = os.getenv("MCP_SERVER_URL", "https://frame-talk.taskmind-ai.com/mcp")
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "adk-audit",
+        "method": "tools/call",
+        "params": {
+            "name": "audit_script_pacing",
+            "arguments": {
+                "dialogue_text": dialogue_text,
+                "target_duration_sec": float(target_duration_sec),
+                "session_source": "adk_director"
+            }
+        }
+    }
+    try:
+        req = urllib.request.Request(
+            mcp_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        words = len(dialogue_text.split())
+        est_dur = words / 2.5
+        return {"estimated_duration_sec": round(est_dur, 2), "drift_seconds": round(est_dur - target_duration_sec, 2)}
+
+
 _director_tools = [
     agent_tool.AgentTool(agent=frame_talk_director_google_search_agent),
     agent_tool.AgentTool(agent=frame_talk_director_url_context_agent),
+    calculate_chronos_hold,
+    log_clickhouse_telemetry,
+    audit_script_pacing,
 ]
-if HAS_MCP and McpToolset and StreamableHTTPConnectionParams:
-    _director_tools.append(
-        McpToolset(
-            connection_params=StreamableHTTPConnectionParams(
-                url='https://frame-talk.taskmind-ai.com/mcp',
-            ),
-        )
-    )
 
 root_agent = LlmAgent(
   name='FrameTalk_Director',

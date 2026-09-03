@@ -18,7 +18,7 @@
 3. **Robotic Gaps vs. Continuous Dialogue:** Old tools insert 5–10s of dead silence buffers between turns to force speech into guessed timestamps, resulting in awkward, robotic ping-pong monologues.
 
 ### 💡 The Frame Talk Innovation
-* **Google Cloud Agent Platform & ADK Export:** Autonomous director agent specification (`agent.py`, exportable as `FrameTalk_Director` via Google ADK v2.8.0) interfacing with the Chronos engine via Model Context Protocol (`/mcp`), coupled with an in-process async engine (`server/agents/`) optimized for zero-latency pipeline execution.
+* **Google Cloud Agent Platform & ADK Director:** Autonomous executive director agent (`agent.py`, exportable as `FrameTalk_Director` via Google ADK v2.8.0) executed via `google.adk.runners.InMemoryRunner` during dialogue generation. The Director directly interfaces with the Chronos engine via Model Context Protocol (`/mcp`) tools (`calculate_chronos_hold`, `log_clickhouse_telemetry`), backed by an in-process async fallback engine (`server/agents/`) for resilient zero-latency production failover. Try the live round-trip demo: `python scripts/demo_adk_director.py`.
 * **Enterprise Anti-Prompt Injection Scope Lock:** Hardened input sanitization and prompt injection shields with XML isolation boundaries (`<untrusted_documentation>`) and automatic refusal gates (`ACCESS DENIED`) on jailbreak or out-of-scope prompts.
 * **Gemini 3.7 Flash Multimodal Comprehension:** Ingests raw `.mp4` video pixels directly via the Gemini File API, cross-referencing visual clicks, inputs, and state changes with `README.md` documentation.
 * **The Chronos Sync Engine:** Dialogue lines are synthesized into uncompressed 24 kHz 16-bit Mono PCM via **`gemini-3.1-flash-tts-preview`**, measuring runtime duration down to the millisecond ($\text{duration\_ms} = \text{pcm\_bytes} / 48$).
@@ -52,7 +52,7 @@ flowchart TD
         MCP["Model Context Protocol Endpoint<br/>(/mcp SSE & JSON-RPC tools)"]
         G["gemini-3.7-flash<br/>Native raw video pixel comprehension"]
         A1["Ingestion & Alignment Agent<br/>Extracts Visual Scenes & UI Actions"]
-        A2["Scriptwriter Persona Agent<br/>Mark & Sarah Live Technical Dialogue"]
+        A2["Scriptwriter Persona Agent<br/>Alex & Sarah Live Technical Dialogue"]
         A3["QA & Pacing Audit Agent<br/>Verifies zero robotic timestamps & accuracy"]
     end
 
