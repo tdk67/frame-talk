@@ -21,10 +21,15 @@ yarn-error.log*
 *.key
 credentials.json
 
+# Google Agent Development Kit (ADK)
+.adk/
+
 # Media & Temporary Artifacts
 uploads/
 output/
 temp/
+screenshots/
+screencaptures/
 *.tmp
 *.mp4
 *.webm
