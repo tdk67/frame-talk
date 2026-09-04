@@ -484,16 +484,24 @@ function initControls() {
             setStepLoading(3, false);
 
             if (store.getState().autopilotMode) {
-                toast.info('⚡ Autopilot: Advancing to Step 4 (Voice Synthesis & Chronos Sync)...', 'Autopilot');
+                toast.info('⚡ Autopilot: Advancing to Step 4 (Voice Setup & Chronos Sync)...', 'Autopilot');
                 setTimeout(() => {
                     if (store.getState().autopilotMode) {
-                        window.generatePodcastAudio();
+                        window.navigateToStep(4);
+                        setTimeout(() => {
+                            if (store.getState().autopilotMode) {
+                                window.generatePodcastAudio();
+                            }
+                        }, 1200);
                     }
                 }, 1500);
             }
         } catch (e) {
             toast.error(e.message, 'Script Generation Failed');
             setStepLoading(3, false);
+            if (store.getState().autopilotMode) {
+                store.setState({ autopilotMode: false });
+            }
         }
     };
 
@@ -517,6 +525,7 @@ function initControls() {
     };
 
     window.generatePodcastAudio = async () => {
+        window.navigateToStep(4);
         const { scenes, dialogue, apiKey } = store.getState();
         const voiceAlex = document.getElementById('host-a-voice-select')?.value || 'Puck';
         const voiceSam = document.getElementById('host-b-voice-select')?.value || 'Kore';
@@ -570,6 +579,9 @@ function initControls() {
         } catch (e) {
             toast.error(e.message, 'Audio Synthesis Failed');
             setStepLoading(4, false);
+            if (store.getState().autopilotMode) {
+                store.setState({ autopilotMode: false });
+            }
         }
     };
 
