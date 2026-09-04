@@ -1,7 +1,7 @@
 """
-Google Cloud Agent Builder & Vertex AI Enterprise Integration Module.
-Provides dual-mode runtime client factory for Google Cloud Vertex AI / Gemini Enterprise
-and exports official Agent Builder multi-agent specifications and tool contracts.
+Google Cloud Agent Development Kit (ADK) Integration Module.
+Provides runtime client factory for Google Cloud Gemini and exports
+formal ADK multi-agent specifications and tool contracts.
 """
 
 import os
@@ -14,17 +14,9 @@ logger = logging.getLogger("frametalk.core.agent_builder")
 def get_genai_client(api_key: Optional[str] = None):
     """
     Factory for Google GenAI Client:
-    1. If Vertex AI is enabled (GOOGLE_GENAI_USE_VERTEXAI=true or config), connects
-       directly to Google Cloud Vertex AI Enterprise (Gemini Enterprise Agent Platform).
-    2. Otherwise, connects using the provided or server-configured Google Gemini API key.
+    Connects using the provided or server-configured Google Gemini API key.
     """
     from google import genai
-
-    if config.vertex_ai_enabled:
-        project = config.google_cloud_project
-        location = config.google_cloud_location
-        logger.info(f"Initializing Google GenAI Client with Google Cloud Vertex AI (Project: {project}, Location: {location})...")
-        return genai.Client(vertexai=True, project=project, location=location)
 
     active_key = api_key or config.get_server_api_key()
     if not active_key:
@@ -37,15 +29,14 @@ def get_genai_client(api_key: Optional[str] = None):
 
 def get_agent_builder_spec() -> Dict[str, Any]:
     """
-    Returns the formal Google Cloud Agent Builder architecture specification
+    Returns the formal Google Cloud Agent Platform / ADK architecture specification
     and tool contracts for the Agentic Cinema Hackathon.
     """
     return {
-        "platform": "Google Cloud Agent Builder (Vertex AI Enterprise)",
-        "runtime_mode": "Vertex AI Enterprise" if config.vertex_ai_enabled else "Google Cloud Gemini Native",
-        "google_cloud_project": config.google_cloud_project,
-        "google_cloud_location": config.google_cloud_location,
-        "google_cloud_agent_id": config.google_cloud_agent_id,
+        "platform": "Google Cloud Agent Platform (ADK v2.8.0)",
+        "runtime_mode": "Google Cloud Agent Development Kit (ADK)",
+        "adk_version": "2.8.0",
+        "agent_name": "FrameTalk_Director",
         "hackathon_partner_track": "ClickHouse + Grafana Labs",
         "agents": [
             {

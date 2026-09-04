@@ -28,12 +28,6 @@
     "gemini_api_sec": 120,
     "file_processing_wait_max_sec": 180
   },
-  "vertex_ai": {
-    "enabled": false,
-    "project": "agentic-cinema-frametalk",
-    "location": "us-west1",
-    "agent_id": "agent_1788438917580"
-  },
   "quota": {
     "max_hosted_videos_per_user": 3,
     "max_hosted_cost_per_user_usd": 1.00,

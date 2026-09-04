@@ -107,7 +107,7 @@ class StudioService:
     ) -> Optional[List[Dict[str, Any]]]:
         """
         Executes dialogue generation through the Google Cloud Agent Platform
-        ADK Director (agent.py:root_agent) or Vertex AI ReasoningEngine.
+        ADK Director (agent.py:root_agent) via InMemoryRunner.
         Returns parsed and validated dialogue turns, or None if unavailable.
         """
         import os
@@ -122,31 +122,7 @@ class StudioService:
 
         session_id = scenes[0].get("scene_id", "adk_session") if scenes else "adk_session"
 
-        # 1. Attempt Google Cloud Vertex AI ReasoningEngine if explicitly enabled
-        if config.vertex_ai_enabled:
-            try:
-                from vertexai.preview import reasoning_engines
-                engine_resource = f"projects/{config.google_cloud_project}/locations/{config.google_cloud_location}/reasoningEngines/{config.google_cloud_agent_id}"
-                logger.info(f"Dispatching script orchestration to Google Cloud ReasoningEngine: {engine_resource}")
-                y_app = reasoning_engines.ReasoningEngine(engine_resource)
-                payload = {
-                    "video_scenes": scenes,
-                    "readme_text": readme_text[:2000],
-                    "session_source": "agent_engine"
-                }
-                res = y_app.query(input=json.dumps(payload))
-                telemetry_repository.log_agent_callback(
-                    session_id=session_id,
-                    tool_name="reasoning_engine_query",
-                    session_source="agent_engine",
-                    metadata=f"scenes:{len(scenes)}"
-                )
-                if isinstance(res, list) and len(res) > 0 and isinstance(res[0], dict):
-                    return res
-            except Exception as e:
-                logger.warning(f"Google Cloud Agent Engine remote query bypassed ({e}). Falling back to ADK Director.")
-
-        # 2. Execute Local Google Cloud ADK Director (agent.py:root_agent)
+        # Execute Google Cloud ADK Director (agent.py:root_agent)
         try:
             from google.adk.runners import InMemoryRunner
             from google.genai import types

@@ -83,7 +83,7 @@ Output ONLY a raw JSON object with a "dialogue" array:
 }}
 """
 
-        if active_key or config.vertex_ai_enabled:
+        if active_key:
             try:
                 raw = self._call_llm(prompt, active_key)
                 parsed = self._extract_json(raw)

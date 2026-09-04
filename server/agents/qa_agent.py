@@ -155,7 +155,7 @@ OUTPUT JSON ONLY:
 }}
 """
         active_key = api_key
-        if active_key or config.vertex_ai_enabled:
+        if active_key:
             try:
                 from google.genai import types
                 client = get_genai_client(active_key)

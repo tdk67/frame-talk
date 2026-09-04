@@ -97,8 +97,8 @@ flowchart TD
 ## 🛠️ Mandatory Technical Stack Integration
 
 ### 1. Google Cloud Layer (The Core Brain)
-- **Google Cloud Agent Platform & ADK (`agent.py`):** Director agent (`FrameTalk_Director`, Project: `agentic-cinema-frametalk`, Location: `us-west1`) specified via Google Agent Development Kit (v2.8.0) with Model Context Protocol (`/mcp`) integration.
-- **`gemini-3.7-flash` (Vertex AI & Gemini Vision):** Native video token execution analyzing temporal UI actions, clicks, and terminal logs directly from raw video pixels without transcripts. Supports both Vertex AI Enterprise and Gemini Developer API runtimes.
+- **Google Cloud Agent Development Kit & ADK (`agent.py`):** Multi-agent system (`FrameTalk_Director`) built natively using Google Cloud ADK (v2.8.0), orchestrating specialized sub-agents via Model Context Protocol (`/mcp`) tools and ClickHouse telemetry.
+- **`gemini-3.7-flash` (Gemini Multimodal Vision):** Native video token execution analyzing temporal UI actions, clicks, and terminal logs directly from raw video pixels without external transcripts.
 - **`gemini-3.1-flash-tts-preview` (Speech & Audio):** Multi-speaker raw PCM synthesis (`Puck` for Mark, `Kore` for Sarah) enabling millisecond-precision duration metering and dynamic timeline expansion.
 - **Prompt Caching Cost Reduction:** Automatic extraction of `cached_content_token_count` applying Google Cloud's 75% discount ($0.0375 / 1M cached tokens) with transparent pre-flight cost calculation.
 

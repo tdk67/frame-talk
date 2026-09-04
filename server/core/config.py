@@ -194,22 +194,7 @@ class AppConfig:
 
     @property
     def vertex_ai_enabled(self) -> bool:
-        env_val = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")
-        if env_val is not None:
-            return env_val.lower() in ("true", "1", "yes")
-        return bool(self._data.get("vertex_ai", {}).get("enabled", False))
-
-    @property
-    def google_cloud_project(self) -> str:
-        return self._data.get("vertex_ai", {}).get("project", "agentic-cinema-frametalk")
-
-    @property
-    def google_cloud_location(self) -> str:
-        return self._data.get("vertex_ai", {}).get("location", "us-west1")
-
-    @property
-    def google_cloud_agent_id(self) -> str:
-        return self._data.get("vertex_ai", {}).get("agent_id", "agent_1788438917580")
+        return False
 
     @property
     def max_hosted_videos_per_user(self) -> int:

@@ -84,7 +84,7 @@ class QuotaService:
         has_user_id: bool = True
     ) -> Dict[str, Any]:
         """Returns the current usage and quota status for a user, IP, and platform."""
-        has_server_key = bool(config.get_server_api_key() or config.vertex_ai_enabled)
+        has_server_key = bool(config.get_server_api_key())
         users_store = self._memory_cache.setdefault("users", {})
         ips_store = self._memory_cache.setdefault("ips", {})
         daily = self._check_and_rollover_global_daily()

@@ -1,8 +1,7 @@
 """
-Google Cloud Agent Platform (ADK) Definition for Frame Talk.
-Exported from Google Cloud Agent Studio (agentic-cinema-frametalk).
+Google Cloud Agent Development Kit (ADK v2.8.0) Multi-Agent System for Frame Talk.
 Orchestrates FrameTalk_Director, Scriptwriter_Persona_Agent, QA_Pacing_Auditor_Agent,
-and connects to the Frame Talk Chronos MCP Server over Streamable HTTP.
+and connects to the Frame Talk Chronos MCP Server and ClickHouse over HTTP.
 """
 
 from functools import cached_property

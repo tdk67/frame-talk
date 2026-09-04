@@ -36,7 +36,7 @@ class IngestionAgent:
         Returns a list of structured Visual Scenes with millisecond precision.
         """
         active_key = api_key or self.api_key or config.get_server_api_key()
-        if not active_key and not config.vertex_ai_enabled:
+        if not active_key:
             raise ValueError("No Gemini API key provided. Please configure your API key in Frame Talk.")
 
         from server.core.guardrails import sanitize_and_inspect_text, wrap_with_isolation_boundary

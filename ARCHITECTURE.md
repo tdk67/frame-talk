@@ -180,9 +180,9 @@ flowchart TD
 
 ## 4. Detailed Component Architecture
 
-### Component 0: Google Cloud Agent Platform (`agent.py`)
-* **Framework:** Google Agent Development Kit (ADK v2.7.1)
-* **Agent Identity:** `FrameTalk_Director` (Deployed ID: `agent_1788438917580`, Project: `agentic-cinema-frametalk`, Region: `us-west1`).
+### Component 0: Google Cloud Agent Development Kit (`agent.py`)
+* **Framework:** Google Cloud Agent Development Kit (ADK v2.8.0)
+* **Agent Identity:** `FrameTalk_Director` (Autonomous Executive Director built natively with Google Cloud ADK v2.8.0).
 * **Enterprise Anti-Prompt Injection Scope Lock:** Hardened system instructions enforce strict refusal boundaries (`ACCESS DENIED: Frame Talk Director operates strictly within the screencast-to-podcast media production pipeline`) against jailbreaks, system prompt exfiltration, and out-of-scope tasks.
 * **Model Context Protocol (MCP) Server (`server/api/routers/mcp_router.py`):**
   - Implements Model Context Protocol specification over SSE (`/mcp`) and JSON-RPC (`POST /mcp`).
