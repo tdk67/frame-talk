@@ -191,10 +191,31 @@ function renderStateUpdates(state) {
         readmeNameEl.textContent = state.readmeFile ? state.readmeFile.name : 'No README uploaded';
     }
 
-    // 3. Step 1 CTA button
+    // 3. Step 1 CTA buttons
     const btnToStep2 = document.getElementById('btn-to-step-2');
     if (btnToStep2) {
         btnToStep2.disabled = !state.videoFile || !state.readmeText || state.isProcessing;
+    }
+    const btnAutopilot = document.getElementById('btn-autopilot');
+    if (btnAutopilot) {
+        btnAutopilot.disabled = !state.videoFile || !state.readmeText || state.isProcessing || state.autopilotMode;
+    }
+
+    // Autopilot Banner & Status Indicator
+    const autoBanner = document.getElementById('autopilot-banner');
+    const autoBadge = document.getElementById('autopilot-badge');
+    const autoDesc = document.getElementById('autopilot-stage-desc');
+    if (autoBanner) autoBanner.style.display = state.autopilotMode ? 'flex' : 'none';
+    if (autoBadge) autoBadge.style.display = state.autopilotMode ? 'inline-flex' : 'none';
+    if (autoDesc && state.autopilotMode) {
+        const stageDescriptions = {
+            1: "Ingesting assets & triggering Gemini 3.7 Flash visual analysis...",
+            2: "Visual scenes detected! Auto-drafting two-host dialogue script...",
+            3: "Script & QA Audit passed! Auto-synthesizing default voices (Puck & Kore)...",
+            4: "Audio synchronized via Chronos! Launching Synchronized Studio & compiling MP4...",
+            5: "Production MP4 compilation in progress..."
+        };
+        autoDesc.textContent = stageDescriptions[state.activeStep] || "Processing with smart defaults...";
     }
 
     // 4. Update Pre-Flight Cost Estimation Card
@@ -420,6 +441,15 @@ function initControls() {
             toast.success(`Video parsed into ${analyzeRes.scenes.length} visual scenes!`, 'Analysis Complete');
             checkBackendHealth();
             setTimeout(() => setStepLoading(2, false), 400);
+
+            if (store.getState().autopilotMode) {
+                toast.info('⚡ Autopilot: Advancing to Step 3 (Draft Script)...', 'Autopilot');
+                setTimeout(() => {
+                    if (store.getState().autopilotMode) {
+                        window.generatePodcastScript();
+                    }
+                }, 1500);
+            }
         } catch (e) {
             console.error("Video Analysis Pipeline Error:", e);
             if (e.message && (e.message.includes('Quota') || e.message.includes('429') || e.message.includes('QUOTA_EXHAUSTED'))) {
@@ -452,6 +482,15 @@ function initControls() {
             markAgentStatus('agent-qa-status', `QA Auditor Agent: Passed (${qaRes.pacing_score || 90}/100)`);
             toast.success(`Generated ${scriptRes.dialogue.length} dialogue turns aligned to scenes.`, 'Script Ready');
             setStepLoading(3, false);
+
+            if (store.getState().autopilotMode) {
+                toast.info('⚡ Autopilot: Advancing to Step 4 (Voice Synthesis & Chronos Sync)...', 'Autopilot');
+                setTimeout(() => {
+                    if (store.getState().autopilotMode) {
+                        window.generatePodcastAudio();
+                    }
+                }, 1500);
+            }
         } catch (e) {
             toast.error(e.message, 'Script Generation Failed');
             setStepLoading(3, false);
@@ -511,6 +550,23 @@ function initControls() {
             updateStepProgress(4, 100);
             toast.success('PCM audio synthesized & Chronos offsets calculated!', 'Audio Synced');
             setTimeout(() => setStepLoading(4, false), 400);
+
+            if (store.getState().autopilotMode) {
+                toast.info('⚡ Autopilot: Advancing to Studio Sync & Compiling Production MP4...', 'Autopilot');
+                setTimeout(() => {
+                    if (store.getState().autopilotMode) {
+                        window.goToMergeStep();
+                        setTimeout(() => {
+                            if (store.getState().autopilotMode) {
+                                const compileBtn = document.getElementById('btn-compile-mp4');
+                                if (compileBtn && !compileBtn.disabled) {
+                                    compileBtn.click();
+                                }
+                            }
+                        }, 1200);
+                    }
+                }, 1500);
+            }
         } catch (e) {
             toast.error(e.message, 'Audio Synthesis Failed');
             setStepLoading(4, false);
@@ -536,15 +592,47 @@ function initControls() {
         try {
             const res = await api.compileVideo(sessionId, uploadedVideoFilename, audioFilename, chronosSchedule);
             if (statusText) {
-                statusText.innerHTML = `✅ Stitched 1080p MP4 Ready! <a href="${res.video_url}" download style="color:var(--color-blue);font-weight:700;margin-left:0.5rem;">📥 Download Synced MP4</a>`;
+                statusText.innerHTML = `✅ Stitched 1080p MP4 Ready! <a href="${res.video_url}" download style="color:var(--color-blue);font-weight:800;margin-left:0.5rem;text-decoration:underline;background:#e0f2fe;padding:4px 10px;border-radius:8px;">📥 Download Synced MP4</a>`;
             }
             store.setState({ compiledVideoUrl: res.video_url });
+
+            if (store.getState().autopilotMode) {
+                store.setState({ autopilotMode: false });
+                toast.success('🎉 Autopilot Complete! Your final production video is compiled and ready.', 'Autopilot Finished');
+            }
         } catch (e) {
             if (statusText) statusText.textContent = `❌ Compilation failed: ${e.message}`;
+            if (store.getState().autopilotMode) {
+                store.setState({ autopilotMode: false });
+            }
         } finally {
             if (btn) btn.disabled = false;
         }
     });
+
+    window.startAutopilot = () => {
+        const { videoFile, readmeText } = store.getState();
+        if (!videoFile || !readmeText) {
+            toast.warning('Please select or drop both a video and README file first.', 'Autopilot');
+            return;
+        }
+        store.setState({ autopilotMode: true });
+        toast.info('⚡ Autopilot engaged: Cascading through all 5 stages to final download with smart defaults.', 'Autopilot Active');
+        window.analyzeVideo();
+    };
+
+    window.stopAutopilot = () => {
+        store.setState({ autopilotMode: false });
+        toast.info('Autopilot paused. Switched to manual control mode.', 'Manual Mode');
+    };
+
+    window.toggleAutopilot = () => {
+        if (store.getState().autopilotMode) {
+            window.stopAutopilot();
+        } else {
+            window.startAutopilot();
+        }
+    };
 }
 
 // ─── Rendering Helpers ───────────────────────────────────────────────────────

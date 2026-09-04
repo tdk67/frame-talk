@@ -69,6 +69,9 @@
                 <div id="clickhouse-status-badge" class="api-badge" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.25);" aria-label="Observability: ClickHouse status">
                     <span class="status-dot" style="background:#60a5fa;" aria-hidden="true">●</span> <span id="clickhouse-status-text">ClickHouse Ready</span>
                 </div>
+                <div id="autopilot-badge" class="api-badge" style="display: none; background: rgba(124, 58, 237, 0.35); color: #fff; border-color: #a78bfa; cursor: pointer;" onclick="toggleAutopilot()" role="button" tabindex="0" aria-label="Autopilot is active. Click to pause." title="Click to pause Autopilot">
+                    <span class="status-dot" style="background: #c084fc;" aria-hidden="true">●</span> <span id="autopilot-badge-text">⚡ Autopilot Active</span>
+                </div>
                 <div id="api-status-badge" class="api-badge unconfigured" onclick="openKeyModal()" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Configure Google Gemini API key" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openKeyModal();}">
                     <span class="status-dot" aria-hidden="true">●</span> <span id="api-status-text">Set API Key</span>
                 </div>
@@ -152,6 +155,24 @@
                 <h1>Frame Talk: Screencast to <span class="handwritten">podcast walkthrough!</span></h1>
                 <p class="subtitle">Turn silent developer screencasts into an engaging, perfectly synchronized two-host podcast video using gemini-3.7-flash and Chronos timeline stretching.</p>
             </section>
+
+            <!-- Autopilot Active Banner -->
+            <div id="autopilot-banner" style="display: none; background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(79, 70, 229, 0.1)); border: 1.5px solid rgba(124, 58, 237, 0.35); border-radius: 12px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 1.35rem;" aria-hidden="true">⚡</span>
+                    <div>
+                        <div style="font-weight: 800; color: var(--color-navy); font-size: 0.95rem;">
+                            Autopilot Running (1-Click Pipeline)
+                        </div>
+                        <div id="autopilot-stage-desc" style="color: var(--color-muted); font-size: 0.85rem;">
+                            Auto-advancing through all 5 stages to video download with smart defaults...
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost" onclick="stopAutopilot()" style="padding: 0.4rem 0.9rem; font-size: 0.8rem; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 8px; font-weight: 700; white-space: nowrap;">
+                    ⏸️ Pause / Manual Mode
+                </button>
+            </div>
 
             <!-- Steps Navigation -->
             <nav class="steps-nav" role="tablist" aria-label="Studio Workflow Steps">
@@ -275,9 +296,14 @@
                     </div>
                 </div>
 
-                <div class="btn-group">
+                <div class="btn-group" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <button id="btn-to-step-2" class="btn btn-primary" onclick="analyzeVideo()" disabled>
                         Analyze Video Screen with gemini-3.7-flash ➔
+                    </button>
+                    <button id="btn-autopilot" class="btn" onclick="startAutopilot()" disabled style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color: #fff; font-weight: 800; border: none; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35); cursor: pointer; padding: 0.8rem 1.5rem; border-radius: 12px; display: inline-flex; align-items: center; gap: 0.6rem; transition: all 0.2s ease;">
+                        <span style="font-size: 1.15rem;">⚡</span>
+                        <span>Autopilot (1-Click Run to Download)</span>
+                        <span style="background: rgba(255,255,255,0.25); font-size: 0.72rem; padding: 2px 7px; border-radius: 20px; font-weight: 800; letter-spacing: 0.5px;">YOLO</span>
                     </button>
                 </div>
             </div>

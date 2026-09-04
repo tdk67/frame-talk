@@ -24,7 +24,8 @@ class StudioStateStore {
             isProcessing: false,
             processingMessage: '',
             clickhouseEvents: [],
-            clickhouseMetrics: null
+            clickhouseMetrics: null,
+            autopilotMode: false
         };
         this.listeners = [];
     }

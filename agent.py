@@ -70,7 +70,8 @@ scriptwriterpersonaagent = LlmAgent(
       '2. NO Synthetic Timestamps: NEVER mention explicit timestamps or times (DO NOT SAY "at 0:14"). Reference screen actions naturally.\n'
       '3. Strict Scene Binding: You MUST assign each dialogue line to its corresponding visual scene_id.\n'
       '4. Mathematical Pacing (CRITICAL): Speech duration is approx 2.5 words per second (150 WPM). You MUST match the total word count of the dialogue for each scene to its video_duration_sec.\n'
-      '5. QA Auditor Feedback: If feedback is provided, you MUST prioritize it (expand or reduce word count for specific scenes).'
+      '5. QA Auditor Feedback: If feedback is provided, you MUST prioritize it (expand or reduce word count for specific scenes).\n'
+      '6. MANDATORY PRODUCT INTRO HOOK: The dialogue MUST open with an engaging 10-second introductory hook in Turn 0 & Turn 1 introducing the product name and core mission before diving into low-level screen configurations.'
   ),
   tools=[
     agent_tool.AgentTool(agent=scriptwriter_persona_agent_google_search_agent),
@@ -327,6 +328,7 @@ root_agent = LlmAgent(
       '- Delegate script generation to the Scriptwriter-Persona-Agent.\n'
       '- Enforce strict scene-to-turn binding (every dialogue line must attach to a valid scene_id).\n'
       '- Mandate Alex (Systems Architect) and Sarah (Dev Advocate) personas with natural banter, technical depth, and zero synthetic timestamps (e.g., forbid "at 0:14").\n'
+      '- Enforce an opening 10-second product introduction hook establishing the tool\'s value proposition before diving into low-level screen configurations.\n'
       '- Enforce strict speech pacing: target ~2.5 words/second (150 words/minute) relative to visual scene duration.\n\n'
       '3. FORENSIC AUDIT & FEEDBACK LOOP\n'
       '- Submit generated dialogue to the QA-Pacing-Auditor-Agent.\n'

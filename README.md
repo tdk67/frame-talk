@@ -10,6 +10,14 @@
 
 ---
 
+## ⚡ What is Frame Talk?
+
+**Frame Talk is a multimodal AI studio that turns silent developer screencasts and repository documentation into fully synchronized, two-host technical video podcasts.**
+
+While tools like NotebookLM only generate audio from static text, Frame Talk visually inspects raw video pixels using **Google Gemini 3.7 Flash** to detect UI state transitions and terminal actions without transcripts. Orchestrated natively via the **Google Cloud Agent Development Kit (ADK v2.8.0)**, its two AI hosts deliver natural technical commentary while the proprietary **Chronos Sync Engine** dynamically freezes video frames when explanations go deep—guaranteeing 100% audio-video lockstep with zero drift.
+
+---
+
 ## 🌟 The Core Problem & The Frame Talk Solution
 
 ### The Gap in Current Tools (NotebookLM & Video Documentation)

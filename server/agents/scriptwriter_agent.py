@@ -54,6 +54,8 @@ STYLE GUIDELINES (MAKE IT FEEL LIKE A REAL LIVE CONVERSATION):
 3. **Strict Scene Binding**: You are provided a structured list of visual scenes. You MUST assign each dialogue line to its corresponding `scene_id`.
 4. **Mathematical Pacing (CRITICAL)**: Speech duration is approx 2.5 words per second (150 WPM). You MUST match the total word count of the dialogue for each scene to its `video_duration_sec`. For example, a 10.0s scene needs exactly ~25 words total. A 3.0s scene needs ~7 words.
 5. **QA Auditor Feedback**: If "QA AUDITOR FEEDBACK TO FIX" is present in the README CONTEXT below, you MUST prioritize it. If it says a scene is too short, expand the dialogue word count for that scene. If it says a scene is too long, reduce the word count for that scene.
+6. **MANDATORY PRODUCT INTRO HOOK (Turn 0 & Turn 1)**:
+   The dialogue MUST open with an engaging 10-second introductory hook. In Turn 0 and Turn 1, Alex and Sam must introduce the product/project name and its core mission/solution based on the README CONTEXT before diving into specific buttons or configurations. (e.g. "Welcome back! Today we're exploring Frame Talk—an AI studio that turns silent developer screencasts into two-host video podcasts with zero audio-video drift.", followed by "Exactly, and check out how it gets started right here on screen..."). Never jump straight into low-level configuration buttons or API keys without establishing what the tool is first.
 
 INPUT SCENES:
 \"\"\"
@@ -71,13 +73,13 @@ Output ONLY a raw JSON object with a "dialogue" array:
       "turn_index": 0,
       "scene_id": "scene_1",
       "speaker": "Alex",
-      "text": "Welcome everyone! Today we're diving into the live architecture, and right off the bat, check out how cleanly the service boots up."
+      "text": "Welcome everyone! Today we're diving into Frame Talk—a multimodal studio that turns silent developer screencasts into dynamic, two-host video podcasts with zero audio drift."
     }},
     {{
       "turn_index": 1,
       "scene_id": "scene_1",
       "speaker": "Sam",
-      "text": "Yeah, notice that instant health check—no waiting around for heavy container warmups."
+      "text": "Right, and right off the bat, notice how cleanly the studio ingests our walkthrough assets."
     }}
   ]
 }}
